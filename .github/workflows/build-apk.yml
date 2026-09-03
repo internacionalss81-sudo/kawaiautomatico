@@ -43,15 +43,6 @@ jobs:
             libssl-dev \
             libtinfo6
 
-      - name: Configurar Android SDK
-        run: |
-          mkdir -p "$HOME/.buildozer/android/platform/android-sdk"
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
-
       - name: Construir APK
         run: |
           buildozer android debug
