@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Baixar projeto
@@ -37,15 +37,29 @@ jobs:
             libtool \
             pkg-config \
             zlib1g-dev \
-            libncurses-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
             cmake \
             libffi-dev \
-            libssl-dev \
-            libtinfo6
+            libssl-dev
+
+      - name: Limpar arquivos antigos
+        run: |
+          rm -rf .buildozer
+          rm -rf bin
+
+      - name: Preparar Buildozer
+        run: |
+          mkdir -p "$HOME/.buildozer"
 
       - name: Construir APK
         run: |
-          buildozer android debug
+          yes | buildozer android debug
+
+      - name: Verificar APK
+        run: |
+          ls -lah bin/
 
       - name: Salvar APK
         uses: actions/upload-artifact@v4
