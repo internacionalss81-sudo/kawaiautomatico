@@ -46,6 +46,17 @@ jobs:
             libssl-dev \
             wget
 
+      - name: Selecionar Java 17
+        run: |
+          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> "$GITHUB_ENV"
+          echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> "$GITHUB_PATH"
+
+          sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+
+          java -version
+          javac -version
+
       - name: Instalar Buildozer
         run: |
           python -m pip install --upgrade pip
@@ -64,8 +75,10 @@ jobs:
             "platforms;android-35" \
             "build-tools;35.0.0"
 
-      - name: Verificar AIDL
+      - name: Verificar Android e AIDL
         run: |
+          echo "JAVA_HOME=$JAVA_HOME"
+          java -version
           echo "ANDROID_HOME=$ANDROID_HOME"
           which sdkmanager
           find "$ANDROID_HOME/build-tools" -name aidl -type f -print
