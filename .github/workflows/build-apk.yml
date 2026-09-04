@@ -19,10 +19,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Desativar repositorios Microsoft
+      - name: Remover repositorios problematicos
         run: |
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.sources
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
           sudo find /etc/apt/sources.list.d -type f \
-            -exec sed -i '/packages.microsoft.com/s/^/#/' {} \;
+            -exec sed -i '/packages.microsoft.com/d' {} \;
 
       - name: Instalar dependencias
         run: |
