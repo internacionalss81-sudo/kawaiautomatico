@@ -46,7 +46,6 @@ steps:
   - name: Preparar Android SDK
     run: |
       set -e
-
       SDK="$ANDROID_HOME"
 
       rm -rf "$SDK"
