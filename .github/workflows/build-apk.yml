@@ -66,7 +66,9 @@ jobs:
           SDK="$ANDROID_HOME"
 
           rm -rf "$SDK"
+
           mkdir -p "$SDK/cmdline-tools/latest"
+          mkdir -p "$SDK/tools/bin"
 
           wget -q \
             https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
@@ -75,21 +77,43 @@ jobs:
           rm -rf /tmp/android-sdk
           mkdir -p /tmp/android-sdk
 
-          unzip -q /tmp/cmdline-tools.zip \
+          unzip -q \
+            /tmp/cmdline-tools.zip \
             -d /tmp/android-sdk
 
-          cp -r /tmp/android-sdk/cmdline-tools/* \
+          cp -r \
+            /tmp/android-sdk/cmdline-tools/* \
             "$SDK/cmdline-tools/latest/"
 
-          chmod +x "$SDK/cmdline-tools/latest/bin/sdkmanager"
+          chmod +x \
+            "$SDK/cmdline-tools/latest/bin/sdkmanager"
+
+          chmod +x \
+            "$SDK/cmdline-tools/latest/bin/avdmanager"
+
+          ln -sf \
+            "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+            "$SDK/tools/bin/sdkmanager"
+
+          ln -sf \
+            "$SDK/cmdline-tools/latest/bin/avdmanager" \
+            "$SDK/tools/bin/avdmanager"
 
           echo "$SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$SDK/tools/bin" >> "$GITHUB_PATH"
+
+          echo "SDK structure:"
+          ls -lah "$SDK/cmdline-tools/latest/bin"
+
+          echo "Buildozer compatibility:"
+          ls -lah "$SDK/tools/bin"
 
       - name: Accept Android licenses
         run: |
           set -e
 
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+          yes | \
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             --sdk_root="$ANDROID_HOME" \
             --licenses || true
 
@@ -116,10 +140,16 @@ jobs:
             --version
 
           echo "Build Tools:"
-          ls -lah "$ANDROID_HOME/build-tools/35.0.0"
+          ls -lah \
+            "$ANDROID_HOME/build-tools/35.0.0"
 
           echo "AIDL:"
-          ls -lah "$ANDROID_HOME/build-tools/35.0.0/aidl"
+          ls -lah \
+            "$ANDROID_HOME/build-tools/35.0.0/aidl"
+
+          echo "Compatibility SDK Manager:"
+          ls -lah \
+            "$ANDROID_HOME/tools/bin/sdkmanager"
 
       - name: Clean Buildozer
         run: |
