@@ -33,35 +33,13 @@ steps:
   - name: Instalar dependencias Linux
     run: |
       sudo apt-get update
-
-      sudo apt-get install -y \
-        git \
-        zip \
-        unzip \
-        wget \
-        curl \
-        openjdk-17-jdk \
-        autoconf \
-        automake \
-        libtool \
-        pkg-config \
-        zlib1g-dev \
-        libncurses5-dev \
-        libncursesw5-dev \
-        libtinfo5 \
-        cmake \
-        libffi-dev \
-        libssl-dev
+      sudo apt-get install -y git zip unzip wget curl openjdk-17-jdk autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
 
   - name: Configurar Java 17
     run: |
       sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
       sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
-
-      echo "Java:"
       java -version
-
-      echo "Javac:"
       javac -version
 
   - name: Instalar Buildozer
@@ -73,114 +51,65 @@ steps:
   - name: Preparar SDK Android
     run: |
       set -e
-
       SDK="$ANDROID_HOME"
 
-      echo "Limpando SDK antigo..."
       rm -rf "$SDK"
-
       mkdir -p "$SDK"
 
-      echo "Baixando Android Command Line Tools..."
-
-      wget -q \
-        https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
-        -O /tmp/cmdline-tools.zip
+      wget -q https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -O /tmp/cmdline-tools.zip
 
       rm -rf /tmp/android-sdk
       mkdir -p /tmp/android-sdk
 
-      unzip -q \
-        /tmp/cmdline-tools.zip \
-        -d /tmp/android-sdk
+      unzip -q /tmp/cmdline-tools.zip -d /tmp/android-sdk
 
       mkdir -p "$SDK/tools"
-
       cp -r /tmp/android-sdk/cmdline-tools/* "$SDK/tools/"
 
       chmod +x "$SDK/tools/bin/sdkmanager"
 
       echo "$SDK/tools/bin" >> "$GITHUB_PATH"
 
-      echo "SDK preparado:"
-      ls -lah "$SDK/tools/bin"
-
   - name: Aceitar licencas Android
     run: |
       set -e
-
       SDK="$ANDROID_HOME"
-
-      echo "Aceitando licencas..."
 
       yes | "$SDK/tools/bin/sdkmanager" \
         --sdk_root="$SDK" \
-        --licenses
+        --licenses || true
 
   - name: Instalar componentes Android
     run: |
       set -e
-
       SDK="$ANDROID_HOME"
 
-      echo "Instalando Platform Tools..."
       "$SDK/tools/bin/sdkmanager" \
         --sdk_root="$SDK" \
-        "platform-tools"
-
-      echo "Instalando Android Platform 35..."
-      "$SDK/tools/bin/sdkmanager" \
-        --sdk_root="$SDK" \
-        "platforms;android-35"
-
-      echo "Instalando Build Tools 35.0.0..."
-      "$SDK/tools/bin/sdkmanager" \
-        --sdk_root="$SDK" \
+        "platform-tools" \
+        "platforms;android-35" \
         "build-tools;35.0.0"
 
   - name: Verificar SDK e AIDL
     run: |
       set -e
-
       SDK="$ANDROID_HOME"
 
-      echo "======================================"
-      echo "ANDROID HOME"
-      echo "======================================"
+      echo "ANDROID_HOME:"
       echo "$SDK"
 
-      echo ""
-      echo "======================================"
-      echo "SDK"
-      echo "======================================"
-      ls -lah "$SDK"
-
-      echo ""
-      echo "======================================"
-      echo "BUILD TOOLS"
-      echo "======================================"
+      echo "Build Tools:"
       ls -lah "$SDK/build-tools"
 
-      echo ""
-      echo "======================================"
-      echo "AIDL"
-      echo "======================================"
-
+      echo "AIDL:"
       find "$SDK/build-tools" -name aidl -type f -print
 
       if [ ! -f "$SDK/build-tools/35.0.0/aidl" ]; then
-        echo ""
         echo "ERRO: AIDL nao foi instalado."
         exit 1
       fi
 
-      echo ""
       echo "AIDL encontrado com sucesso!"
-
-      echo ""
-      echo "======================================"
-      echo "SDKMANAGER"
-      echo "======================================"
 
       "$SDK/tools/bin/sdkmanager" --version
 
@@ -195,7 +124,6 @@ steps:
 
   - name: Verificar APK
     run: |
-      echo "APK criado:"
       ls -lah bin/
 
   - name: Salvar APK
