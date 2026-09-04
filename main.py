@@ -693,7 +693,6 @@ class KwaiAutomatico(App):
     def guardar_permissao_pasta(self, uri):
 
         try:
-
             from jnius import autoclass
 
             PythonActivity = autoclass(
@@ -701,8 +700,7 @@ class KwaiAutomatico(App):
             )
 
             activity = PythonActivity.mActivity
-
-            content_resolver = activity.getContentResolver()
+            resolver = activity.getContentResolver()
 
             Intent = autoclass(
                 "android.content.Intent"
@@ -711,15 +709,19 @@ class KwaiAutomatico(App):
             flags = (
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
                 | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
             )
 
-            content_resolver.takePersistableUriPermission(
+            resolver.takePersistableUriPermission(
                 uri,
                 flags
             )
 
-        except Exception:
-            pass
+        except Exception as erro:
+            print(
+                "Erro ao guardar permissão:",
+                erro
+            )
 
     # ==========================================================
     # ENCONTRAR VÍDEOS DENTRO DA PASTA ANDROID
@@ -730,7 +732,6 @@ class KwaiAutomatico(App):
         videos = []
 
         try:
-
             from jnius import autoclass
 
             PythonActivity = autoclass(
@@ -738,156 +739,104 @@ class KwaiAutomatico(App):
             )
 
             activity = PythonActivity.mActivity
-
             resolver = activity.getContentResolver()
 
-            DocumentFile = autoclass(
-                "androidx.documentfile.provider.DocumentFile"
+            DocumentsContract = autoclass(
+                "android.provider.DocumentsContract"
             )
 
-            pasta = DocumentFile.fromTreeUri(
-                activity,
-                pasta_uri
+            children_uri = (
+                DocumentsContract.buildChildDocumentsUriUsingTree(
+                    pasta_uri,
+                    DocumentsContract.getTreeDocumentId(
+                        pasta_uri
+                    )
+                )
             )
 
-            if pasta is None:
+            cursor = resolver.query(
+                children_uri,
+                None,
+                None,
+                None,
+                None
+            )
+
+            if cursor is None:
                 return []
 
-            arquivos = pasta.listFiles()
-
-            extensoes = (
-                ".mp4",
-                ".mov",
-                ".avi",
-                ".mkv",
-                ".webm"
-            )
-
-            for arquivo in arquivos:
-
-                try:
-
-                    if not arquivo.isFile():
-                        continue
-
-                    nome = arquivo.getName()
-
-                    if nome is None:
-                        continue
-
-                    nome_lower = nome.lower()
-
-                    if nome_lower.endswith(
-                        extensoes
-                    ):
-
-                        uri = arquivo.getUri()
-
-                        videos.append(
-                            uri.toString()
-                        )
-
-                except Exception:
-                    continue
-
-        except Exception:
-
-            # Fallback usando ContentResolver.
             try:
-
-                videos = self.listar_videos_content_resolver(
-                    pasta_uri
+                extensoes = (
+                    ".mp4",
+                    ".mov",
+                    ".avi",
+                    ".mkv",
+                    ".webm"
                 )
 
-            except Exception:
+                nome_coluna = (
+                    DocumentsContract.Document.COLUMN_DISPLAY_NAME
+                )
 
-                videos = []
+                documento_coluna = (
+                    DocumentsContract.Document.COLUMN_DOCUMENT_ID
+                )
+
+                while cursor.moveToNext():
+                    try:
+                        nome_index = cursor.getColumnIndex(
+                            nome_coluna
+                        )
+
+                        if nome_index < 0:
+                            continue
+
+                        nome = cursor.getString(nome_index)
+
+                        if not nome or not nome.lower().endswith(extensoes):
+                            continue
+
+                        documento_index = cursor.getColumnIndex(
+                            documento_coluna
+                        )
+
+                        if documento_index < 0:
+                            continue
+
+                        document_id = cursor.getString(
+                            documento_index
+                        )
+
+                        arquivo_uri = (
+                            DocumentsContract.buildDocumentUriUsingTree(
+                                pasta_uri,
+                                document_id
+                            )
+                        )
+
+                        videos.append(arquivo_uri.toString())
+
+                    except Exception as erro:
+                        print(
+                            "Erro ao processar arquivo:",
+                            erro
+                        )
+                        continue
+
+            finally:
+                cursor.close()
+
+        except Exception as erro:
+            print(
+                "Erro ao listar vídeos:",
+                erro
+            )
 
         return videos
 
     # ==========================================================
     # FALLBACK CONTENT RESOLVER
     # ==========================================================
-
-    def listar_videos_content_resolver(
-        self,
-        pasta_uri
-    ):
-
-        videos = []
-
-        from jnius import autoclass
-
-        PythonActivity = autoclass(
-            "org.kivy.android.PythonActivity"
-        )
-
-        activity = PythonActivity.mActivity
-
-        resolver = activity.getContentResolver()
-
-        uri = pasta_uri
-
-        children_uri = uri.buildUpon().appendPath(
-            "children"
-        ).build()
-
-        cursor = resolver.query(
-            children_uri,
-            None,
-            None,
-            None,
-            None
-        )
-
-        if cursor is None:
-            return videos
-
-        try:
-
-            extensoes = (
-                ".mp4",
-                ".mov",
-                ".avi",
-                ".mkv",
-                ".webm"
-            )
-
-            while cursor.moveToNext():
-
-                nome = ""
-
-                try:
-
-                    nome_index = cursor.getColumnIndex(
-                        "_display_name"
-                    )
-
-                    if nome_index >= 0:
-                        nome = cursor.getString(
-                            nome_index
-                        )
-
-                except Exception:
-                    pass
-
-                if not nome:
-                    continue
-
-                if not nome.lower().endswith(
-                    extensoes
-                ):
-                    continue
-
-                videos.append(
-                    nome
-                )
-
-        finally:
-
-            cursor.close()
-
-        return videos
 
     # ==========================================================
     # MOSTRAR VÍDEOS ANDROID
