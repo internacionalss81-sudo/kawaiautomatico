@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
+    env:
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+
     steps:
       - name: Baixar projeto
         uses: actions/checkout@v4
@@ -19,7 +22,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Remover repositorios Microsoft problematicos
+      - name: Remover repositorios Microsoft
         run: |
           sudo rm -f /etc/apt/sources.list.d/azure-cli.sources
           sudo rm -f /etc/apt/sources.list.d/azure-cli.list
@@ -32,6 +35,8 @@ jobs:
             git \
             zip \
             unzip \
+            wget \
+            curl \
             openjdk-17-jdk \
             autoconf \
             automake \
@@ -43,17 +48,11 @@ jobs:
             libtinfo5 \
             cmake \
             libffi-dev \
-            libssl-dev \
-            wget
+            libssl-dev
 
-      - name: Selecionar Java 17
+      - name: Confirmar Java 17
         run: |
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> "$GITHUB_ENV"
-          echo "/usr/lib/jvm/java-17-openjdk-amd64/bin" >> "$GITHUB_PATH"
-
-          sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
-
+          echo "JAVA_HOME=$JAVA_HOME"
           java -version
           javac -version
 
@@ -63,30 +62,80 @@ jobs:
           pip install buildozer
           pip install "cython==0.29.37"
 
-      - name: Configurar Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Preparar SDK Android do Buildozer
+        run: |
+          SDK="$HOME/.buildozer/android/platform/android-sdk"
+          CMD="$SDK/cmdline-tools/latest"
+
+          mkdir -p "$SDK/cmdline-tools"
+
+          wget -q \
+            https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
+            -O /tmp/android-cmdline-tools.zip
+
+          rm -rf "$CMD"
+          mkdir -p "$CMD"
+
+          unzip -q /tmp/android-cmdline-tools.zip -d /tmp/android-tools
+
+          mv /tmp/android-tools/cmdline-tools/* "$CMD"/
+
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "$CMD/bin" >> "$GITHUB_PATH"
 
       - name: Instalar ferramentas Android
         run: |
-          yes | sdkmanager --licenses || true
+          SDK="$HOME/.buildozer/android/platform/android-sdk"
 
-          sdkmanager \
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
 
-      - name: Verificar Android e AIDL
+      - name: Verificar AIDL
         run: |
-          echo "JAVA_HOME=$JAVA_HOME"
-          java -version
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          which sdkmanager
-          find "$ANDROID_HOME/build-tools" -name aidl -type f -print
+          SDK="$HOME/.buildozer/android/platform/android-sdk"
+
+          echo "SDK:"
+          echo "$SDK"
+
+          echo ""
+          echo "Build Tools:"
+          ls -lah "$SDK/build-tools"
+
+          echo ""
+          echo "AIDL:"
+          find "$SDK/build-tools" -name aidl -type f -print
+
+          echo ""
+          echo "SDK Manager:"
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" --list | head -30
 
       - name: Limpar arquivos antigos
         run: |
           rm -rf .buildozer
           rm -rf bin
+
+      - name: Recriar SDK depois da limpeza
+        run: |
+          SDK="$HOME/.buildozer/android/platform/android-sdk"
+
+          mkdir -p "$SDK"
+
+          if [ ! -d "$SDK/build-tools/35.0.0" ]; then
+            echo "Build Tools não encontrados."
+            exit 1
+          fi
+
+          if [ ! -f "$SDK/build-tools/35.0.0/aidl" ]; then
+            echo "AIDL não encontrado."
+            exit 1
+          fi
+
+          echo "AIDL encontrado com sucesso."
 
       - name: Construir APK
         run: |
@@ -94,6 +143,7 @@ jobs:
 
       - name: Verificar APK
         run: |
+          echo "Arquivos APK encontrados:"
           ls -lah bin/
 
       - name: Salvar APK
