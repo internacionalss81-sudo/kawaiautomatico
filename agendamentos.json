@@ -1,0 +1,11 @@
+[
+    {
+        "id": 1,
+        "videos": [
+            "C:\\XboxGames\\video\\06 - Vídeo.mp4"
+        ],
+        "horario": "12:00",
+        "criado_em": "2026-09-03 18:55:54",
+        "status": "agendado"
+    }
+]

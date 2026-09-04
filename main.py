@@ -411,6 +411,12 @@ class KwaiAutomatico(App):
             from android import activity
             from jnius import autoclass
 
+            PythonActivity = autoclass(
+                "org.kivy.android.PythonActivity"
+            )
+
+            activity_real = PythonActivity.mActivity
+
             Intent = autoclass(
                 "android.content.Intent"
             )
@@ -439,7 +445,7 @@ class KwaiAutomatico(App):
                 self.receber_resultado_android
             )
 
-            activity.startActivityForResult(
+            activity_real.startActivityForResult(
                 intent,
                 1001
             )
@@ -538,6 +544,12 @@ class KwaiAutomatico(App):
             from android import activity
             from jnius import autoclass
 
+            PythonActivity = autoclass(
+                "org.kivy.android.PythonActivity"
+            )
+
+            activity_real = PythonActivity.mActivity
+
             Intent = autoclass(
                 "android.content.Intent"
             )
@@ -559,7 +571,7 @@ class KwaiAutomatico(App):
                 self.receber_resultado_android
             )
 
-            activity.startActivityForResult(
+            activity_real.startActivityForResult(
                 intent,
                 1002
             )
