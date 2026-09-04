@@ -33,7 +33,24 @@ steps:
   - name: Instalar dependencias Linux
     run: |
       sudo apt-get update
-      sudo apt-get install -y git zip unzip wget curl openjdk-17-jdk autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+      sudo apt-get install -y \
+        git \
+        zip \
+        unzip \
+        wget \
+        curl \
+        openjdk-17-jdk \
+        autoconf \
+        automake \
+        libtool \
+        pkg-config \
+        zlib1g-dev \
+        libncurses5-dev \
+        libncursesw5-dev \
+        libtinfo5 \
+        cmake \
+        libffi-dev \
+        libssl-dev
 
   - name: Configurar Java 17
     run: |
@@ -56,12 +73,15 @@ steps:
       rm -rf "$SDK"
       mkdir -p "$SDK"
 
-      wget -q https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -O /tmp/cmdline-tools.zip
+      wget -q \
+        https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
+        -O /tmp/cmdline-tools.zip
 
       rm -rf /tmp/android-sdk
       mkdir -p /tmp/android-sdk
 
-      unzip -q /tmp/cmdline-tools.zip -d /tmp/android-sdk
+      unzip -q /tmp/cmdline-tools.zip \
+        -d /tmp/android-sdk
 
       mkdir -p "$SDK/tools"
       cp -r /tmp/android-sdk/cmdline-tools/* "$SDK/tools/"
