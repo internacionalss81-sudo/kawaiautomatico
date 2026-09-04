@@ -4,6 +4,7 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.spinner import Spinner
 from kivy.clock import Clock
+from kivy.metrics import sp, dp
 from kivy.utils import platform
 from kivy.graphics import Color, RoundedRectangle
 
@@ -61,8 +62,8 @@ class KwaiAutomatico(App):
 
         return BoxLayout(
             orientation="vertical",
-            padding=20,
-            spacing=15
+            padding=dp(20),
+            spacing=dp(15)
         )
 
     def on_start(self):
@@ -140,39 +141,39 @@ class KwaiAutomatico(App):
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=[25, 30, 25, 30],
-            spacing=18
+            padding=[dp(25), dp(30), dp(25), dp(30)],
+            spacing=dp(18)
         )
 
         titulo = Label(
             text="Kwai Automático",
-            font_size=32,
+            font_size=sp(32),
             bold=True,
             size_hint_y=None,
-            height=70
+            height=dp(70)
         )
 
         subtitulo = Label(
             text="Painel de automação",
-            font_size=18,
+            font_size=sp(18),
             size_hint_y=None,
-            height=40
+            height=dp(40)
         )
 
         status = Label(
             text=self.obter_status(),
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=45
+            height=dp(45)
         )
 
         iniciar = BotaoColorido(
             text="▶  INICIAR PROGRAMA",
-            font_size=22,
+            font_size=sp(22),
             bold=True,
             size_hint_y=None,
-            height=80,
+            height=dp(80),
             cor=(0.10, 0.65, 0.25, 1)
         )
 
@@ -182,10 +183,10 @@ class KwaiAutomatico(App):
 
         parar = BotaoColorido(
             text="■  PARAR PROGRAMA",
-            font_size=22,
+            font_size=sp(22),
             bold=True,
             size_hint_y=None,
-            height=80,
+            height=dp(80),
             cor=(0.85, 0.15, 0.15, 1)
         )
 
@@ -195,10 +196,10 @@ class KwaiAutomatico(App):
 
         selecionar = BotaoColorido(
             text="📹  SELECIONAR VÍDEOS",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=80,
+            height=dp(80),
             cor=(0.10, 0.40, 0.85, 1)
         )
 
@@ -208,10 +209,10 @@ class KwaiAutomatico(App):
 
         pasta = BotaoColorido(
             text="📂  SELECIONAR PASTA",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=80,
+            height=dp(80),
             cor=(0.15, 0.45, 0.75, 1)
         )
 
@@ -221,10 +222,10 @@ class KwaiAutomatico(App):
 
         agendamentos = BotaoColorido(
             text="🕐  MEUS AGENDAMENTOS",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=80,
+            height=dp(80),
             cor=(0.50, 0.25, 0.75, 1)
         )
 
@@ -339,16 +340,16 @@ class KwaiAutomatico(App):
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=20,
-            spacing=15
+            padding=dp(20),
+            spacing=dp(15)
         )
 
         titulo = Label(
             text="📹 SELECIONE SEUS VÍDEOS",
-            font_size=26,
+            font_size=sp(26),
             bold=True,
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
 
         arquivos = FileChooserListView(
@@ -365,19 +366,19 @@ class KwaiAutomatico(App):
 
         confirmar = BotaoColorido(
             text="✓  ADICIONAR VÍDEOS",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=75,
+            height=dp(75),
             cor=(0.10, 0.65, 0.25, 1)
         )
 
         voltar = BotaoColorido(
             text="←  VOLTAR",
-            font_size=20,
+            font_size=sp(20),
             bold=True,
             size_hint_y=None,
-            height=65,
+            height=dp(65),
             cor=(0.35, 0.35, 0.40, 1)
         )
 
@@ -440,6 +441,14 @@ class KwaiAutomatico(App):
 
             self.selecao_android = "videos"
 
+            try:
+                activity.unbind(
+                    on_activity_result=
+                    self.receber_resultado_android
+                )
+            except Exception:
+                pass
+
             activity.bind(
                 on_activity_result=
                 self.receber_resultado_android
@@ -478,16 +487,16 @@ class KwaiAutomatico(App):
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=20,
-            spacing=15
+            padding=dp(20),
+            spacing=dp(15)
         )
 
         titulo = Label(
             text="📂 ESCOLHA A PASTA DOS VÍDEOS",
-            font_size=25,
+            font_size=sp(25),
             bold=True,
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
 
         arquivos = FileChooserListView(
@@ -498,19 +507,19 @@ class KwaiAutomatico(App):
 
         confirmar = BotaoColorido(
             text="✓  USAR ESTA PASTA",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=75,
+            height=dp(75),
             cor=(0.10, 0.65, 0.25, 1)
         )
 
         voltar = BotaoColorido(
             text="←  VOLTAR",
-            font_size=20,
+            font_size=sp(20),
             bold=True,
             size_hint_y=None,
-            height=65,
+            height=dp(65),
             cor=(0.35, 0.35, 0.40, 1)
         )
 
@@ -566,6 +575,14 @@ class KwaiAutomatico(App):
 
             self.selecao_android = "pasta"
 
+            try:
+                activity.unbind(
+                    on_activity_result=
+                    self.receber_resultado_android
+                )
+            except Exception:
+                pass
+
             activity.bind(
                 on_activity_result=
                 self.receber_resultado_android
@@ -589,6 +606,27 @@ class KwaiAutomatico(App):
     # ==========================================================
 
     def receber_resultado_android(
+        self,
+        request_code,
+        result_code,
+        intent
+    ):
+
+        # O Android chama esta função fora da thread
+        # principal do Kivy. Mexer na interface aqui
+        # direto pode travar o app (tela preta).
+        # Por isso, jogamos o processamento para a
+        # thread principal usando Clock.
+
+        Clock.schedule_once(
+            lambda dt: self._processar_resultado_android(
+                request_code,
+                result_code,
+                intent
+            )
+        )
+
+    def _processar_resultado_android(
         self,
         request_code,
         result_code,
@@ -866,16 +904,16 @@ class KwaiAutomatico(App):
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=25,
-            spacing=15
+            padding=dp(25),
+            spacing=dp(15)
         )
 
         titulo = Label(
             text="📹 VÍDEOS ENCONTRADOS",
-            font_size=27,
+            font_size=sp(27),
             bold=True,
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
 
         nomes = []
@@ -895,23 +933,23 @@ class KwaiAutomatico(App):
 
         lista = Label(
             text="\n".join(nomes),
-            font_size=18
+            font_size=sp(18)
         )
 
         quantidade = Label(
             text=f"Total de vídeos: {len(videos)}",
-            font_size=20,
+            font_size=sp(20),
             bold=True,
             size_hint_y=None,
-            height=50
+            height=dp(50)
         )
 
         horario_titulo = Label(
             text="🕐 ESCOLHA O HORÁRIO",
-            font_size=22,
+            font_size=sp(22),
             bold=True,
             size_hint_y=None,
-            height=50
+            height=dp(50)
         )
 
         horas = [
@@ -922,9 +960,9 @@ class KwaiAutomatico(App):
         self.seletor_hora = Spinner(
             text="12",
             values=horas,
-            font_size=22,
+            font_size=sp(22),
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
 
         minutos = [
@@ -935,17 +973,17 @@ class KwaiAutomatico(App):
         self.seletor_minuto = Spinner(
             text="00",
             values=minutos,
-            font_size=22,
+            font_size=sp(22),
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
 
         horario_atual = Label(
             text="Horário escolhido: 12:00",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=55
+            height=dp(55)
         )
 
         def atualizar_horario(
@@ -969,10 +1007,10 @@ class KwaiAutomatico(App):
 
         salvar = BotaoColorido(
             text="✓  SALVAR AGENDAMENTO",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=75,
+            height=dp(75),
             cor=(0.10, 0.65, 0.25, 1)
         )
 
@@ -982,10 +1020,10 @@ class KwaiAutomatico(App):
 
         voltar = BotaoColorido(
             text="←  VOLTAR",
-            font_size=20,
+            font_size=sp(20),
             bold=True,
             size_hint_y=None,
-            height=65,
+            height=dp(65),
             cor=(0.35, 0.35, 0.40, 1)
         )
 
@@ -1169,16 +1207,16 @@ class KwaiAutomatico(App):
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=25,
-            spacing=15
+            padding=dp(25),
+            spacing=dp(15)
         )
 
         titulo = Label(
             text="📹 VÍDEOS SELECIONADOS",
-            font_size=27,
+            font_size=sp(27),
             bold=True,
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
 
         nomes = "\n".join(
@@ -1188,15 +1226,15 @@ class KwaiAutomatico(App):
 
         lista = Label(
             text=nomes,
-            font_size=18
+            font_size=sp(18)
         )
 
         horario_titulo = Label(
             text="🕐 ESCOLHA O HORÁRIO",
-            font_size=22,
+            font_size=sp(22),
             bold=True,
             size_hint_y=None,
-            height=50
+            height=dp(50)
         )
 
         horas = [
@@ -1207,9 +1245,9 @@ class KwaiAutomatico(App):
         self.seletor_hora = Spinner(
             text="12",
             values=horas,
-            font_size=22,
+            font_size=sp(22),
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
 
         minutos = [
@@ -1220,17 +1258,17 @@ class KwaiAutomatico(App):
         self.seletor_minuto = Spinner(
             text="00",
             values=minutos,
-            font_size=22,
+            font_size=sp(22),
             size_hint_y=None,
-            height=65
+            height=dp(65)
         )
 
         horario_atual = Label(
             text="Horário escolhido: 12:00",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=55
+            height=dp(55)
         )
 
         def atualizar_horario(
@@ -1254,10 +1292,10 @@ class KwaiAutomatico(App):
 
         salvar = BotaoColorido(
             text="✓  SALVAR AGENDAMENTO",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=75,
+            height=dp(75),
             cor=(0.10, 0.65, 0.25, 1)
         )
 
@@ -1267,10 +1305,10 @@ class KwaiAutomatico(App):
 
         voltar = BotaoColorido(
             text="←  VOLTAR",
-            font_size=20,
+            font_size=sp(20),
             bold=True,
             size_hint_y=None,
-            height=65,
+            height=dp(65),
             cor=(0.35, 0.35, 0.40, 1)
         )
 
@@ -1336,23 +1374,23 @@ class KwaiAutomatico(App):
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=25,
-            spacing=15
+            padding=dp(25),
+            spacing=dp(15)
         )
 
         titulo = Label(
             text="🕐 MEUS AGENDAMENTOS",
-            font_size=27,
+            font_size=sp(27),
             bold=True,
             size_hint_y=None,
-            height=70
+            height=dp(70)
         )
 
         if not agendamentos:
 
             lista = Label(
                 text="Nenhum agendamento salvo.",
-                font_size=21
+                font_size=sp(21)
             )
 
         else:
@@ -1373,15 +1411,15 @@ class KwaiAutomatico(App):
 
             lista = Label(
                 text="\n".join(textos),
-                font_size=19
+                font_size=sp(19)
             )
 
         voltar = BotaoColorido(
             text="←  VOLTAR",
-            font_size=21,
+            font_size=sp(21),
             bold=True,
             size_hint_y=None,
-            height=70,
+            height=dp(70),
             cor=(0.35, 0.35, 0.40, 1)
         )
 
@@ -1406,22 +1444,22 @@ class KwaiAutomatico(App):
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=30,
-            spacing=25
+            padding=dp(30),
+            spacing=dp(25)
         )
 
         texto = Label(
             text=mensagem,
-            font_size=23,
+            font_size=sp(23),
             bold=True
         )
 
         voltar = BotaoColorido(
             text="←  VOLTAR",
-            font_size=22,
+            font_size=sp(22),
             bold=True,
             size_hint_y=None,
-            height=80,
+            height=dp(80),
             cor=(0.35, 0.35, 0.40, 1)
         )
 
