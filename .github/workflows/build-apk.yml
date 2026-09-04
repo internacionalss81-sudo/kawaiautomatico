@@ -1,148 +1,206 @@
 name: KwaiAutomatico APK
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+workflow_dispatch:
+push:
+branches:
+- main
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+build:
+runs-on: ubuntu-22.04
 
-    env:
-      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-      ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
-      ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+```
+env:
+  JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+  ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+  ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
-    steps:
-      - name: Baixar projeto
-        uses: actions/checkout@v4
+steps:
+  - name: Baixar projeto
+    uses: actions/checkout@v4
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+  - name: Configurar Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: "3.11"
 
-      - name: Remover repositorios Microsoft
-        run: |
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.sources
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+  - name: Remover repositorios Microsoft
+    run: |
+      sudo rm -f /etc/apt/sources.list.d/azure-cli.sources
+      sudo rm -f /etc/apt/sources.list.d/azure-cli.list
 
-      - name: Instalar dependencias
-        run: |
-          sudo apt-get update
+  - name: Instalar dependencias Linux
+    run: |
+      sudo apt-get update
 
-          sudo apt-get install -y \
-            git \
-            zip \
-            unzip \
-            wget \
-            curl \
-            openjdk-17-jdk \
-            autoconf \
-            automake \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo5 \
-            cmake \
-            libffi-dev \
-            libssl-dev
+      sudo apt-get install -y \
+        git \
+        zip \
+        unzip \
+        wget \
+        curl \
+        openjdk-17-jdk \
+        autoconf \
+        automake \
+        libtool \
+        pkg-config \
+        zlib1g-dev \
+        libncurses5-dev \
+        libncursesw5-dev \
+        libtinfo5 \
+        cmake \
+        libffi-dev \
+        libssl-dev
 
-      - name: Configurar Java 17
-        run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+  - name: Configurar Java 17
+    run: |
+      sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+      sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
 
-          java -version
-          javac -version
+      echo "Java:"
+      java -version
 
-      - name: Instalar Buildozer
-        run: |
-          python -m pip install --upgrade pip
-          pip install buildozer
-          pip install "cython==0.29.37"
+      echo "Javac:"
+      javac -version
 
-      - name: Preparar SDK Android
-        run: |
-          SDK="$ANDROID_HOME"
+  - name: Instalar Buildozer
+    run: |
+      python -m pip install --upgrade pip
+      pip install buildozer
+      pip install "cython==0.29.37"
 
-          rm -rf "$SDK"
-          mkdir -p "$SDK"
+  - name: Preparar SDK Android
+    run: |
+      set -e
 
-          wget -q \
-            https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
-            -O /tmp/cmdline-tools.zip
+      SDK="$ANDROID_HOME"
 
-          mkdir -p /tmp/android-sdk
+      echo "Limpando SDK antigo..."
+      rm -rf "$SDK"
 
-          unzip -q /tmp/cmdline-tools.zip \
-            -d /tmp/android-sdk
+      mkdir -p "$SDK"
 
-          mkdir -p "$SDK/tools"
+      echo "Baixando Android Command Line Tools..."
 
-          cp -r /tmp/android-sdk/cmdline-tools/* "$SDK/tools/"
+      wget -q \
+        https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
+        -O /tmp/cmdline-tools.zip
 
-          echo "$SDK/tools/bin" >> "$GITHUB_PATH"
+      rm -rf /tmp/android-sdk
+      mkdir -p /tmp/android-sdk
 
-      - name: Instalar Android Build Tools
-        run: |
-          SDK="$ANDROID_HOME"
+      unzip -q \
+        /tmp/cmdline-tools.zip \
+        -d /tmp/android-sdk
 
-          "$SDK/tools/bin/sdkmanager" --sdk_root="$SDK" \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+      mkdir -p "$SDK/tools"
 
-      - name: Aceitar licencas Android
-        run: |
-          SDK="$ANDROID_HOME"
+      cp -r /tmp/android-sdk/cmdline-tools/* "$SDK/tools/"
 
-          yes | "$SDK/tools/bin/sdkmanager" \
-            --sdk_root="$SDK" \
-            --licenses || true
+      chmod +x "$SDK/tools/bin/sdkmanager"
 
-      - name: Verificar AIDL
-        run: |
-          SDK="$ANDROID_HOME"
+      echo "$SDK/tools/bin" >> "$GITHUB_PATH"
 
-          echo "ANDROID_HOME:"
-          echo "$SDK"
+      echo "SDK preparado:"
+      ls -lah "$SDK/tools/bin"
 
-          echo ""
-          echo "SDK:"
-          ls -lah "$SDK"
+  - name: Aceitar licencas Android
+    run: |
+      set -e
 
-          echo ""
-          echo "Build Tools:"
-          ls -lah "$SDK/build-tools"
+      SDK="$ANDROID_HOME"
 
-          echo ""
-          echo "AIDL:"
-          find "$SDK/build-tools" -name aidl -type f -print
+      echo "Aceitando licencas..."
 
-          echo ""
-          echo "SDKMANAGER:"
-          "$SDK/tools/bin/sdkmanager" --version
+      yes | "$SDK/tools/bin/sdkmanager" \
+        --sdk_root="$SDK" \
+        --licenses
 
-      - name: Limpar Buildozer
-        run: |
-          rm -rf .buildozer
-          rm -rf bin
+  - name: Instalar componentes Android
+    run: |
+      set -e
 
-      - name: Construir APK
-        run: |
-          buildozer android debug
+      SDK="$ANDROID_HOME"
 
-      - name: Verificar APK
-        run: |
-          ls -lah bin/
+      echo "Instalando Platform Tools..."
+      "$SDK/tools/bin/sdkmanager" \
+        --sdk_root="$SDK" \
+        "platform-tools"
 
-      - name: Salvar APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: KwaiAutomatico-APK
-          path: bin/*.apk
+      echo "Instalando Android Platform 35..."
+      "$SDK/tools/bin/sdkmanager" \
+        --sdk_root="$SDK" \
+        "platforms;android-35"
+
+      echo "Instalando Build Tools 35.0.0..."
+      "$SDK/tools/bin/sdkmanager" \
+        --sdk_root="$SDK" \
+        "build-tools;35.0.0"
+
+  - name: Verificar SDK e AIDL
+    run: |
+      set -e
+
+      SDK="$ANDROID_HOME"
+
+      echo "======================================"
+      echo "ANDROID HOME"
+      echo "======================================"
+      echo "$SDK"
+
+      echo ""
+      echo "======================================"
+      echo "SDK"
+      echo "======================================"
+      ls -lah "$SDK"
+
+      echo ""
+      echo "======================================"
+      echo "BUILD TOOLS"
+      echo "======================================"
+      ls -lah "$SDK/build-tools"
+
+      echo ""
+      echo "======================================"
+      echo "AIDL"
+      echo "======================================"
+
+      find "$SDK/build-tools" -name aidl -type f -print
+
+      if [ ! -f "$SDK/build-tools/35.0.0/aidl" ]; then
+        echo ""
+        echo "ERRO: AIDL nao foi instalado."
+        exit 1
+      fi
+
+      echo ""
+      echo "AIDL encontrado com sucesso!"
+
+      echo ""
+      echo "======================================"
+      echo "SDKMANAGER"
+      echo "======================================"
+
+      "$SDK/tools/bin/sdkmanager" --version
+
+  - name: Limpar arquivos antigos do Buildozer
+    run: |
+      rm -rf .buildozer
+      rm -rf bin
+
+  - name: Construir APK
+    run: |
+      buildozer android debug
+
+  - name: Verificar APK
+    run: |
+      echo "APK criado:"
+      ls -lah bin/
+
+  - name: Salvar APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: KwaiAutomatico-APK
+      path: bin/*.apk
+```
