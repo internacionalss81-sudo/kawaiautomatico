@@ -27,7 +27,24 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip wget curl openjdk-17-jdk autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          sudo apt-get install -y \
+            git \
+            zip \
+            unzip \
+            wget \
+            curl \
+            openjdk-17-jdk \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
+            libffi-dev \
+            libssl-dev
 
       - name: Configure Java 17
         run: |
@@ -49,26 +66,30 @@ jobs:
           SDK="$ANDROID_HOME"
 
           rm -rf "$SDK"
-          mkdir -p "$SDK/tools"
+          mkdir -p "$SDK/cmdline-tools/latest"
 
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -O /tmp/cmdline-tools.zip
+          wget -q \
+            https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
+            -O /tmp/cmdline-tools.zip
 
           rm -rf /tmp/android-sdk
           mkdir -p /tmp/android-sdk
 
-          unzip -q /tmp/cmdline-tools.zip -d /tmp/android-sdk
+          unzip -q /tmp/cmdline-tools.zip \
+            -d /tmp/android-sdk
 
-          cp -r /tmp/android-sdk/cmdline-tools/* "$SDK/tools/"
+          cp -r /tmp/android-sdk/cmdline-tools/* \
+            "$SDK/cmdline-tools/latest/"
 
-          chmod +x "$SDK/tools/bin/sdkmanager"
+          chmod +x "$SDK/cmdline-tools/latest/bin/sdkmanager"
 
-          echo "$SDK/tools/bin" >> "$GITHUB_PATH"
+          echo "$SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
       - name: Accept Android licenses
         run: |
           set -e
 
-          yes | "$ANDROID_HOME/tools/bin/sdkmanager" \
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             --sdk_root="$ANDROID_HOME" \
             --licenses || true
 
@@ -76,7 +97,7 @@ jobs:
         run: |
           set -e
 
-          "$ANDROID_HOME/tools/bin/sdkmanager" \
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             --sdk_root="$ANDROID_HOME" \
             "platform-tools" \
             "platforms;android-35" \
@@ -90,7 +111,9 @@ jobs:
           echo "$ANDROID_HOME"
 
           echo "SDK Manager:"
-          "$ANDROID_HOME/tools/bin/sdkmanager" --version
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            --sdk_root="$ANDROID_HOME" \
+            --version
 
           echo "Build Tools:"
           ls -lah "$ANDROID_HOME/build-tools/35.0.0"
