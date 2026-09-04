@@ -50,41 +50,12 @@ class KwaiAutomatico(App):
         super().__init__(**kwargs)
 
         self.programa_rodando = False
+
         self.videos_selecionados = []
+
         self.pasta_selecionada = ""
+
         self.selecao_android = None
-
-    def carregar_agendamentos(self):
-
-        if not os.path.exists(ARQUIVO_AGENDAMENTOS):
-            return []
-
-        try:
-            with open(
-                ARQUIVO_AGENDAMENTOS,
-                "r",
-                encoding="utf-8"
-            ) as arquivo:
-
-                return json.load(arquivo)
-
-        except Exception:
-            return []
-
-    def salvar_arquivo(self, agendamentos):
-
-        with open(
-            ARQUIVO_AGENDAMENTOS,
-            "w",
-            encoding="utf-8"
-        ) as arquivo:
-
-            json.dump(
-                agendamentos,
-                arquivo,
-                indent=4,
-                ensure_ascii=False
-            )
 
     def build(self):
 
@@ -96,6 +67,72 @@ class KwaiAutomatico(App):
 
     def on_start(self):
         self.mostrar_principal()
+
+    # ==========================================================
+    # ARQUIVOS DE AGENDAMENTO
+    # ==========================================================
+
+    def caminho_agendamentos(self):
+
+        if platform == "android":
+
+            try:
+                from android.storage import app_storage_path
+
+                pasta = app_storage_path()
+
+                return os.path.join(
+                    pasta,
+                    ARQUIVO_AGENDAMENTOS
+                )
+
+            except Exception:
+
+                return ARQUIVO_AGENDAMENTOS
+
+        return ARQUIVO_AGENDAMENTOS
+
+    def carregar_agendamentos(self):
+
+        arquivo_agendamentos = self.caminho_agendamentos()
+
+        if not os.path.exists(arquivo_agendamentos):
+            return []
+
+        try:
+
+            with open(
+                arquivo_agendamentos,
+                "r",
+                encoding="utf-8"
+            ) as arquivo:
+
+                return json.load(arquivo)
+
+        except Exception:
+
+            return []
+
+    def salvar_arquivo(self, agendamentos):
+
+        arquivo_agendamentos = self.caminho_agendamentos()
+
+        with open(
+            arquivo_agendamentos,
+            "w",
+            encoding="utf-8"
+        ) as arquivo:
+
+            json.dump(
+                agendamentos,
+                arquivo,
+                indent=4,
+                ensure_ascii=False
+            )
+
+    # ==========================================================
+    # TELA PRINCIPAL
+    # ==========================================================
 
     def mostrar_principal(self, *args):
 
@@ -213,6 +250,10 @@ class KwaiAutomatico(App):
 
         return "○  PROGRAMA PARADO"
 
+    # ==========================================================
+    # INICIAR / PARAR
+    # ==========================================================
+
     def iniciar_programa(self, *args):
 
         if self.programa_rodando:
@@ -278,11 +319,18 @@ class KwaiAutomatico(App):
                 agendamentos
             )
 
+    # ==========================================================
+    # SELECIONAR VÍDEOS
+    # ==========================================================
+
     def selecionar_videos(self, *args):
 
         if platform == "android":
+
             self.abrir_seletor_android_videos()
+
         else:
+
             self.selecionar_videos_pc()
 
     def selecionar_videos_pc(self):
@@ -352,6 +400,10 @@ class KwaiAutomatico(App):
         self.root.clear_widgets()
         self.root.add_widget(layout)
 
+    # ==========================================================
+    # SELETOR ANDROID DE VÍDEOS
+    # ==========================================================
+
     def abrir_seletor_android_videos(self):
 
         try:
@@ -400,11 +452,18 @@ class KwaiAutomatico(App):
                 f"{erro}"
             )
 
+    # ==========================================================
+    # SELECIONAR PASTA
+    # ==========================================================
+
     def selecionar_pasta(self, *args):
 
         if platform == "android":
+
             self.abrir_seletor_android_pasta()
+
         else:
+
             self.selecionar_pasta_pc()
 
     def selecionar_pasta_pc(self):
@@ -468,6 +527,10 @@ class KwaiAutomatico(App):
         self.root.clear_widgets()
         self.root.add_widget(layout)
 
+    # ==========================================================
+    # ABRIR PASTA ANDROID
+    # ==========================================================
+
     def abrir_seletor_android_pasta(self):
 
         try:
@@ -509,6 +572,10 @@ class KwaiAutomatico(App):
                 f"{erro}"
             )
 
+    # ==========================================================
+    # RESULTADO DO ANDROID
+    # ==========================================================
+
     def receber_resultado_android(
         self,
         request_code,
@@ -530,24 +597,53 @@ class KwaiAutomatico(App):
             if intent is None:
                 return
 
-            uri = intent.getData()
-
-            if uri is None:
-                return
-
-            uri_string = uri.toString()
-
             if request_code == 1002:
+
+                uri = intent.getData()
+
+                if uri is None:
+
+                    self.mostrar_mensagem(
+                        "Nenhuma pasta foi selecionada."
+                    )
+
+                    return
+
+                uri_string = uri.toString()
 
                 self.pasta_selecionada = uri_string
 
-                self.mostrar_mensagem(
-                    "PASTA SELECIONADA!\n\n"
-                    "A pasta do Android foi "
-                    "registrada no aplicativo."
+                # Guarda a permissão da pasta.
+                self.guardar_permissao_pasta(
+                    uri
                 )
 
-            elif request_code == 1001:
+                # Procura os vídeos dentro da pasta.
+                videos = self.listar_videos_android(
+                    uri
+                )
+
+                if not videos:
+
+                    self.mostrar_mensagem(
+                        "Pasta selecionada!\n\n"
+                        "Porém, nenhum vídeo foi "
+                        "encontrado nessa pasta.\n\n"
+                        "Coloque vídeos MP4, MOV, AVI, "
+                        "MKV ou WEBM dentro dela."
+                    )
+
+                    return
+
+                self.videos_selecionados = videos
+
+                self.mostrar_videos_android(
+                    videos
+                )
+
+                return
+
+            if request_code == 1001:
 
                 videos = []
 
@@ -569,9 +665,13 @@ class KwaiAutomatico(App):
 
                 else:
 
-                    videos.append(
-                        uri_string
-                    )
+                    uri = intent.getData()
+
+                    if uri is not None:
+
+                        videos.append(
+                            uri.toString()
+                        )
 
                 self.videos_selecionados = videos
 
@@ -582,10 +682,216 @@ class KwaiAutomatico(App):
         except Exception as erro:
 
             self.mostrar_mensagem(
-                "Erro ao receber a seleção "
-                "do Android.\n\n"
+                "Erro ao acessar a seleção do Android.\n\n"
                 f"{erro}"
             )
+
+    # ==========================================================
+    # PERMISSÃO DA PASTA
+    # ==========================================================
+
+    def guardar_permissao_pasta(self, uri):
+
+        try:
+
+            from jnius import autoclass
+
+            PythonActivity = autoclass(
+                "org.kivy.android.PythonActivity"
+            )
+
+            activity = PythonActivity.mActivity
+
+            content_resolver = activity.getContentResolver()
+
+            Intent = autoclass(
+                "android.content.Intent"
+            )
+
+            flags = (
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+
+            content_resolver.takePersistableUriPermission(
+                uri,
+                flags
+            )
+
+        except Exception:
+            pass
+
+    # ==========================================================
+    # ENCONTRAR VÍDEOS DENTRO DA PASTA ANDROID
+    # ==========================================================
+
+    def listar_videos_android(self, pasta_uri):
+
+        videos = []
+
+        try:
+
+            from jnius import autoclass
+
+            PythonActivity = autoclass(
+                "org.kivy.android.PythonActivity"
+            )
+
+            activity = PythonActivity.mActivity
+
+            resolver = activity.getContentResolver()
+
+            DocumentFile = autoclass(
+                "androidx.documentfile.provider.DocumentFile"
+            )
+
+            pasta = DocumentFile.fromTreeUri(
+                activity,
+                pasta_uri
+            )
+
+            if pasta is None:
+                return []
+
+            arquivos = pasta.listFiles()
+
+            extensoes = (
+                ".mp4",
+                ".mov",
+                ".avi",
+                ".mkv",
+                ".webm"
+            )
+
+            for arquivo in arquivos:
+
+                try:
+
+                    if not arquivo.isFile():
+                        continue
+
+                    nome = arquivo.getName()
+
+                    if nome is None:
+                        continue
+
+                    nome_lower = nome.lower()
+
+                    if nome_lower.endswith(
+                        extensoes
+                    ):
+
+                        uri = arquivo.getUri()
+
+                        videos.append(
+                            uri.toString()
+                        )
+
+                except Exception:
+                    continue
+
+        except Exception:
+
+            # Fallback usando ContentResolver.
+            try:
+
+                videos = self.listar_videos_content_resolver(
+                    pasta_uri
+                )
+
+            except Exception:
+
+                videos = []
+
+        return videos
+
+    # ==========================================================
+    # FALLBACK CONTENT RESOLVER
+    # ==========================================================
+
+    def listar_videos_content_resolver(
+        self,
+        pasta_uri
+    ):
+
+        videos = []
+
+        from jnius import autoclass
+
+        PythonActivity = autoclass(
+            "org.kivy.android.PythonActivity"
+        )
+
+        activity = PythonActivity.mActivity
+
+        resolver = activity.getContentResolver()
+
+        uri = pasta_uri
+
+        children_uri = uri.buildUpon().appendPath(
+            "children"
+        ).build()
+
+        cursor = resolver.query(
+            children_uri,
+            None,
+            None,
+            None,
+            None
+        )
+
+        if cursor is None:
+            return videos
+
+        try:
+
+            extensoes = (
+                ".mp4",
+                ".mov",
+                ".avi",
+                ".mkv",
+                ".webm"
+            )
+
+            while cursor.moveToNext():
+
+                nome = ""
+
+                try:
+
+                    nome_index = cursor.getColumnIndex(
+                        "_display_name"
+                    )
+
+                    if nome_index >= 0:
+                        nome = cursor.getString(
+                            nome_index
+                        )
+
+                except Exception:
+                    pass
+
+                if not nome:
+                    continue
+
+                if not nome.lower().endswith(
+                    extensoes
+                ):
+                    continue
+
+                videos.append(
+                    nome
+                )
+
+        finally:
+
+            cursor.close()
+
+        return videos
+
+    # ==========================================================
+    # MOSTRAR VÍDEOS ANDROID
+    # ==========================================================
 
     def mostrar_videos_android(self, videos):
 
@@ -604,7 +910,7 @@ class KwaiAutomatico(App):
         )
 
         titulo = Label(
-            text="📹 VÍDEOS SELECIONADOS",
+            text="📹 VÍDEOS ENCONTRADOS",
             font_size=27,
             bold=True,
             size_hint_y=None,
@@ -615,16 +921,28 @@ class KwaiAutomatico(App):
 
         for video in videos:
 
-            nome = video.split("/")[-1]
+            nome = self.obter_nome_uri(
+                video
+            )
 
             if not nome:
                 nome = "Vídeo selecionado"
 
-            nomes.append(nome)
+            nomes.append(
+                "• " + nome
+            )
 
         lista = Label(
             text="\n".join(nomes),
             font_size=18
+        )
+
+        quantidade = Label(
+            text=f"Total de vídeos: {len(videos)}",
+            font_size=20,
+            bold=True,
+            size_hint_y=None,
+            height=50
         )
 
         horario_titulo = Label(
@@ -669,7 +987,10 @@ class KwaiAutomatico(App):
             height=55
         )
 
-        def atualizar_horario(instance, valor):
+        def atualizar_horario(
+            instance,
+            valor
+        ):
 
             horario_atual.text = (
                 "Horário escolhido: "
@@ -713,6 +1034,7 @@ class KwaiAutomatico(App):
 
         layout.add_widget(titulo)
         layout.add_widget(lista)
+        layout.add_widget(quantidade)
         layout.add_widget(horario_titulo)
         layout.add_widget(self.seletor_hora)
         layout.add_widget(self.seletor_minuto)
@@ -722,6 +1044,73 @@ class KwaiAutomatico(App):
 
         self.root.clear_widgets()
         self.root.add_widget(layout)
+
+    # ==========================================================
+    # NOME DA URI
+    # ==========================================================
+
+    def obter_nome_uri(self, uri_string):
+
+        try:
+
+            from jnius import autoclass
+
+            PythonActivity = autoclass(
+                "org.kivy.android.PythonActivity"
+            )
+
+            activity = PythonActivity.mActivity
+
+            resolver = activity.getContentResolver()
+
+            Uri = autoclass(
+                "android.net.Uri"
+            )
+
+            uri = Uri.parse(
+                uri_string
+            )
+
+            cursor = resolver.query(
+                uri,
+                None,
+                None,
+                None,
+                None
+            )
+
+            if cursor is None:
+                return uri_string
+
+            try:
+
+                if cursor.moveToFirst():
+
+                    indice = cursor.getColumnIndex(
+                        "_display_name"
+                    )
+
+                    if indice >= 0:
+
+                        nome = cursor.getString(
+                            indice
+                        )
+
+                        if nome:
+                            return nome
+
+            finally:
+
+                cursor.close()
+
+        except Exception:
+            pass
+
+        return uri_string
+
+    # ==========================================================
+    # PASTA WINDOWS
+    # ==========================================================
 
     def confirmar_pasta_pc(self, selecao):
 
@@ -738,7 +1127,8 @@ class KwaiAutomatico(App):
         if not os.path.isdir(pasta):
 
             self.mostrar_mensagem(
-                "Selecione uma pasta, não um arquivo."
+                "Selecione uma pasta, "
+                "não um arquivo."
             )
 
             return
@@ -782,6 +1172,7 @@ class KwaiAutomatico(App):
             return
 
         self.videos_selecionados = videos
+
         self.pasta_selecionada = pasta
 
         if not videos:
@@ -793,7 +1184,13 @@ class KwaiAutomatico(App):
 
             return
 
-        self.mostrar_videos(videos)
+        self.mostrar_videos(
+            videos
+        )
+
+    # ==========================================================
+    # MOSTRAR VÍDEOS PC
+    # ==========================================================
 
     def mostrar_videos(self, videos):
 
@@ -875,7 +1272,10 @@ class KwaiAutomatico(App):
             height=55
         )
 
-        def atualizar_horario(instance, valor):
+        def atualizar_horario(
+            instance,
+            valor
+        ):
 
             horario_atual.text = (
                 "Horário escolhido: "
@@ -929,6 +1329,10 @@ class KwaiAutomatico(App):
         self.root.clear_widgets()
         self.root.add_widget(layout)
 
+    # ==========================================================
+    # SALVAR AGENDAMENTO
+    # ==========================================================
+
     def salvar_agendamento(self, *args):
 
         hora = self.seletor_hora.text
@@ -960,6 +1364,10 @@ class KwaiAutomatico(App):
             f"Vídeos: {len(self.videos_selecionados)}\n"
             f"Horário: {hora}:{minuto}"
         )
+
+    # ==========================================================
+    # AGENDAMENTOS
+    # ==========================================================
 
     def mostrar_agendamentos(self, *args):
 
@@ -1026,6 +1434,10 @@ class KwaiAutomatico(App):
 
         self.root.clear_widgets()
         self.root.add_widget(layout)
+
+    # ==========================================================
+    # MENSAGEM
+    # ==========================================================
 
     def mostrar_mensagem(self, mensagem):
 
