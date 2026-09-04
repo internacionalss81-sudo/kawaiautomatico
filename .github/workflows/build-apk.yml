@@ -9,13 +9,12 @@ branches:
 jobs:
 build:
 runs-on: ubuntu-22.04
+env:
+JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
 ```
-env:
-  JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-  ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
-  ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
-
 steps:
   - name: Baixar projeto
     uses: actions/checkout@v4
@@ -25,20 +24,13 @@ steps:
     with:
       python-version: "3.11"
 
-  - name: Remover repositorios Microsoft
-    run: |
-      sudo rm -f /etc/apt/sources.list.d/azure-cli.sources
-      sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-
-  - name: Instalar dependencias Linux
+  - name: Instalar dependencias
     run: |
       sudo apt-get update
-      sudo apt-get install -y git zip unzip wget curl openjdk-17-jdk autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+      sudo apt-get install -y git zip unzip wget openjdk-17-jdk
 
-  - name: Configurar Java 17
+  - name: Configurar Java
     run: |
-      sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
-      sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
       java -version
       javac -version
 
@@ -47,59 +39,6 @@ steps:
       python -m pip install --upgrade pip
       pip install buildozer
       pip install "cython==0.29.37"
-
-  - name: Preparar SDK Android
-    run: |
-      SDK="$ANDROID_HOME"
-
-      rm -rf "$SDK"
-      mkdir -p "$SDK/tools"
-
-      wget -q https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -O /tmp/android.zip
-
-      mkdir -p /tmp/android-tools
-      unzip -q /tmp/android.zip -d /tmp/android-tools
-
-      cp -r /tmp/android-tools/cmdline-tools/* "$SDK/tools/"
-
-      chmod +x "$SDK/tools/bin/sdkmanager"
-
-  - name: Aceitar licencas
-    run: |
-      SDK="$ANDROID_HOME"
-
-      yes | "$SDK/tools/bin/sdkmanager" \
-        --sdk_root="$SDK" \
-        --licenses || true
-
-  - name: Instalar Android
-    run: |
-      SDK="$ANDROID_HOME"
-
-      "$SDK/tools/bin/sdkmanager" \
-        --sdk_root="$SDK" \
-        "platform-tools" \
-        "platforms;android-35" \
-        "build-tools;35.0.0"
-
-  - name: Verificar AIDL
-    run: |
-      SDK="$ANDROID_HOME"
-
-      echo "Verificando Build Tools..."
-      ls -lah "$SDK/build-tools"
-
-      echo "Procurando AIDL..."
-      find "$SDK/build-tools" -name aidl -type f
-
-      test -f "$SDK/build-tools/35.0.0/aidl"
-
-      echo "AIDL encontrado!"
-
-  - name: Limpar Buildozer
-    run: |
-      rm -rf .buildozer
-      rm -rf bin
 
   - name: Construir APK
     run: |
