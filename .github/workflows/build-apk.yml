@@ -19,19 +19,13 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Remover repositorios problematicos
+      - name: Remover repositorios Microsoft problematicos
         run: |
           sudo rm -f /etc/apt/sources.list.d/azure-cli.sources
           sudo rm -f /etc/apt/sources.list.d/azure-cli.list
-          sudo find /etc/apt/sources.list.d -type f \
-            -exec sed -i '/packages.microsoft.com/d' {} \;
 
-      - name: Instalar dependencias
+      - name: Instalar dependencias Linux
         run: |
-          python -m pip install --upgrade pip
-          pip install buildozer
-          pip install "cython==0.29.37"
-
           sudo apt-get update
 
           sudo apt-get install -y \
@@ -49,7 +43,32 @@ jobs:
             libtinfo5 \
             cmake \
             libffi-dev \
-            libssl-dev
+            libssl-dev \
+            wget
+
+      - name: Instalar Buildozer
+        run: |
+          python -m pip install --upgrade pip
+          pip install buildozer
+          pip install "cython==0.29.37"
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar ferramentas Android
+        run: |
+          yes | sdkmanager --licenses || true
+
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+      - name: Verificar AIDL
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          which sdkmanager
+          find "$ANDROID_HOME/build-tools" -name aidl -type f -print
 
       - name: Limpar arquivos antigos
         run: |
@@ -58,7 +77,7 @@ jobs:
 
       - name: Construir APK
         run: |
-          yes | buildozer android debug
+          buildozer android debug
 
       - name: Verificar APK
         run: |
