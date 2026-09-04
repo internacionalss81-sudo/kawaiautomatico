@@ -1,13 +1,11 @@
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
-from kivy.uix.filechooser import FileChooserListView
 from kivy.uix.spinner import Spinner
-from kivy.uix.scrollview import ScrollView
-from kivy.graphics import Color, RoundedRectangle, Line
 from kivy.clock import Clock
+from kivy.utils import platform
+from kivy.graphics import Color, RoundedRectangle
 
 import json
 import os
@@ -17,36 +15,9 @@ from datetime import datetime
 ARQUIVO_AGENDAMENTOS = "agendamentos.json"
 
 
-# ============================================================
-# CORES
-# ============================================================
+class BotaoColorido(Button):
 
-FUNDO = (0.055, 0.055, 0.08, 1)
-CARTAO = (0.09, 0.09, 0.14, 1)
-CARTAO_2 = (0.12, 0.12, 0.18, 1)
-
-BRANCO = (0.95, 0.95, 0.98, 1)
-CINZA = (0.62, 0.63, 0.70, 1)
-
-ROXO = (0.45, 0.25, 0.90, 1)
-ROXO_CLARO = (0.58, 0.38, 1, 1)
-
-VERDE = (0.18, 0.75, 0.42, 1)
-VERMELHO = (0.88, 0.22, 0.25, 1)
-AZUL = (0.20, 0.50, 0.95, 1)
-
-
-# ============================================================
-# BOTÃO PERSONALIZADO
-# ============================================================
-
-class BotaoModerno(Button):
-
-    def __init__(
-        self,
-        cor=ROXO,
-        **kwargs
-    ):
+    def __init__(self, cor=(0.15, 0.55, 0.90, 1), **kwargs):
         super().__init__(**kwargs)
 
         self.background_normal = ""
@@ -55,18 +26,12 @@ class BotaoModerno(Button):
 
         self.cor = cor
 
-        self.color = BRANCO
-        self.font_size = 17
-        self.bold = True
-
         with self.canvas.before:
-
             Color(*self.cor)
-
             self.retangulo = RoundedRectangle(
                 pos=self.pos,
                 size=self.size,
-                radius=[14]
+                radius=[15]
             )
 
         self.bind(
@@ -75,75 +40,26 @@ class BotaoModerno(Button):
         )
 
     def atualizar_retangulo(self, *args):
-
         self.retangulo.pos = self.pos
         self.retangulo.size = self.size
 
-
-# ============================================================
-# CARTÃO
-# ============================================================
-
-class Cartao(BoxLayout):
-
-    def __init__(self, **kwargs):
-
-        super().__init__(**kwargs)
-
-        self.orientation = "vertical"
-
-        self.padding = 18
-        self.spacing = 8
-
-        with self.canvas.before:
-
-            Color(*CARTAO)
-
-            self.retangulo = RoundedRectangle(
-                pos=self.pos,
-                size=self.size,
-                radius=[18]
-            )
-
-        self.bind(
-            pos=self.atualizar_retangulo,
-            size=self.atualizar_retangulo
-        )
-
-    def atualizar_retangulo(self, *args):
-
-        self.retangulo.pos = self.pos
-        self.retangulo.size = self.size
-
-
-# ============================================================
-# APLICATIVO
-# ============================================================
 
 class KwaiAutomatico(App):
 
     def __init__(self, **kwargs):
-
         super().__init__(**kwargs)
 
         self.programa_rodando = False
-
         self.videos_selecionados = []
-
-    # ========================================================
-    # ARQUIVO
-    # ========================================================
+        self.pasta_selecionada = ""
+        self.selecao_android = None
 
     def carregar_agendamentos(self):
 
-        if not os.path.exists(
-            ARQUIVO_AGENDAMENTOS
-        ):
-
+        if not os.path.exists(ARQUIVO_AGENDAMENTOS):
             return []
 
         try:
-
             with open(
                 ARQUIVO_AGENDAMENTOS,
                 "r",
@@ -153,13 +69,9 @@ class KwaiAutomatico(App):
                 return json.load(arquivo)
 
         except Exception:
-
             return []
 
-    def salvar_arquivo(
-        self,
-        agendamentos
-    ):
+    def salvar_arquivo(self, agendamentos):
 
         with open(
             ARQUIVO_AGENDAMENTOS,
@@ -174,374 +86,139 @@ class KwaiAutomatico(App):
                 ensure_ascii=False
             )
 
-    # ========================================================
-    # INICIALIZAÇÃO
-    # ========================================================
-
     def build(self):
 
-        self.root = BoxLayout(
-            orientation="vertical"
-        )
-
-        with self.root.canvas.before:
-
-            Color(*FUNDO)
-
-            self.fundo = RoundedRectangle(
-                pos=self.root.pos,
-                size=self.root.size
-            )
-
-        self.root.bind(
-            pos=self.atualizar_fundo,
-            size=self.atualizar_fundo
-        )
-
-        return self.root
-
-    def atualizar_fundo(self, *args):
-
-        self.fundo.pos = self.root.pos
-        self.fundo.size = self.root.size
-
-    def on_start(self):
-
-        self.mostrar_principal()
-
-    # ========================================================
-    # TÍTULO
-    # ========================================================
-
-    def criar_titulo(
-        self,
-        texto,
-        tamanho=24
-    ):
-
-        return Label(
-            text=texto,
-            color=BRANCO,
-            font_size=tamanho,
-            bold=True,
-            size_hint_y=None,
-            height=45
-        )
-
-    # ========================================================
-    # PRINCIPAL
-    # ========================================================
-
-    def mostrar_principal(
-        self,
-        *args
-    ):
-
-        self.root.clear_widgets()
-
-        principal = BoxLayout(
+        return BoxLayout(
             orientation="vertical",
             padding=20,
             spacing=15
         )
 
-        # ----------------------------------------------------
-        # CABEÇALHO
-        # ----------------------------------------------------
+    def on_start(self):
+        self.mostrar_principal()
 
-        cabecalho = BoxLayout(
+    def mostrar_principal(self, *args):
+
+        self.root.clear_widgets()
+
+        layout = BoxLayout(
             orientation="vertical",
-            size_hint_y=None,
-            height=95,
-            spacing=3
+            padding=[25, 30, 25, 30],
+            spacing=18
         )
 
         titulo = Label(
             text="Kwai Automático",
-            color=BRANCO,
-            font_size=30,
-            bold=True
+            font_size=32,
+            bold=True,
+            size_hint_y=None,
+            height=70
         )
 
         subtitulo = Label(
-            text="Gerenciador de vídeos e agendamentos",
-            color=CINZA,
-            font_size=14
-        )
-
-        cabecalho.add_widget(titulo)
-        cabecalho.add_widget(subtitulo)
-
-        principal.add_widget(cabecalho)
-
-        # ----------------------------------------------------
-        # STATUS
-        # ----------------------------------------------------
-
-        status_cartao = Cartao(
+            text="Painel de automação",
+            font_size=18,
             size_hint_y=None,
-            height=105
-        )
-
-        status_titulo = Label(
-            text="STATUS DO PROGRAMA",
-            color=CINZA,
-            font_size=13,
-            bold=True,
-            size_hint_y=None,
-            height=25,
-            halign="left"
+            height=40
         )
 
         status = Label(
             text=self.obter_status(),
-            color=(
-                VERDE
-                if self.programa_rodando
-                else CINZA
-            ),
-            font_size=23,
-            bold=True
-        )
-
-        status_cartao.add_widget(
-            status_titulo
-        )
-
-        status_cartao.add_widget(
-            status
-        )
-
-        principal.add_widget(
-            status_cartao
-        )
-
-        # ----------------------------------------------------
-        # RESUMO
-        # ----------------------------------------------------
-
-        agendamentos = self.carregar_agendamentos()
-
-        resumo = GridLayout(
-            cols=2,
-            spacing=12,
-            size_hint_y=None,
-            height=95
-        )
-
-        videos_cartao = Cartao()
-
-        videos_numero = Label(
-            text=str(
-                len(
-                    self.videos_selecionados
-                )
-            ),
-            color=ROXO_CLARO,
-            font_size=27,
-            bold=True
-        )
-
-        videos_texto = Label(
-            text="Vídeos selecionados",
-            color=CINZA,
-            font_size=13
-        )
-
-        videos_cartao.add_widget(
-            videos_numero
-        )
-
-        videos_cartao.add_widget(
-            videos_texto
-        )
-
-        agenda_cartao = Cartao()
-
-        agenda_numero = Label(
-            text=str(
-                len(agendamentos)
-            ),
-            color=AZUL,
-            font_size=27,
-            bold=True
-        )
-
-        agenda_texto = Label(
-            text="Agendamentos",
-            color=CINZA,
-            font_size=13
-        )
-
-        agenda_cartao.add_widget(
-            agenda_numero
-        )
-
-        agenda_cartao.add_widget(
-            agenda_texto
-        )
-
-        resumo.add_widget(
-            videos_cartao
-        )
-
-        resumo.add_widget(
-            agenda_cartao
-        )
-
-        principal.add_widget(
-            resumo
-        )
-
-        # ----------------------------------------------------
-        # CONTROLE
-        # ----------------------------------------------------
-
-        controle = Label(
-            text="CONTROLE",
-            color=CINZA,
-            font_size=13,
+            font_size=21,
             bold=True,
             size_hint_y=None,
-            height=30
+            height=45
         )
 
-        principal.add_widget(
-            controle
-        )
-
-        botoes = GridLayout(
-            cols=2,
-            spacing=12,
+        iniciar = BotaoColorido(
+            text="▶  INICIAR PROGRAMA",
+            font_size=22,
+            bold=True,
             size_hint_y=None,
-            height=65
-        )
-
-        iniciar = BotaoModerno(
-            text="▶  INICIAR",
-            cor=VERDE
+            height=80,
+            cor=(0.10, 0.65, 0.25, 1)
         )
 
         iniciar.bind(
             on_press=self.iniciar_programa
         )
 
-        parar = BotaoModerno(
-            text="■  PARAR",
-            cor=VERMELHO
+        parar = BotaoColorido(
+            text="■  PARAR PROGRAMA",
+            font_size=22,
+            bold=True,
+            size_hint_y=None,
+            height=80,
+            cor=(0.85, 0.15, 0.15, 1)
         )
 
         parar.bind(
             on_press=self.parar_programa
         )
 
-        botoes.add_widget(
-            iniciar
-        )
-
-        botoes.add_widget(
-            parar
-        )
-
-        principal.add_widget(
-            botoes
-        )
-
-        # ----------------------------------------------------
-        # VÍDEOS
-        # ----------------------------------------------------
-
-        videos_label = Label(
-            text="VÍDEOS",
-            color=CINZA,
-            font_size=13,
+        selecionar = BotaoColorido(
+            text="📹  SELECIONAR VÍDEOS",
+            font_size=21,
             bold=True,
             size_hint_y=None,
-            height=30
-        )
-
-        principal.add_widget(
-            videos_label
-        )
-
-        selecionar = BotaoModerno(
-            text="🎬  SELECIONAR VÍDEOS",
-            cor=ROXO,
-            size_hint_y=None,
-            height=60
+            height=80,
+            cor=(0.10, 0.40, 0.85, 1)
         )
 
         selecionar.bind(
             on_press=self.selecionar_videos
         )
 
-        principal.add_widget(
-            selecionar
-        )
-
-        pasta = BotaoModerno(
-            text="📁  SELECIONAR PASTA",
-            cor=CARTAO_2,
+        pasta = BotaoColorido(
+            text="📂  SELECIONAR PASTA",
+            font_size=21,
+            bold=True,
             size_hint_y=None,
-            height=60
-        )
-
-        principal.add_widget(
-            pasta
+            height=80,
+            cor=(0.15, 0.45, 0.75, 1)
         )
 
         pasta.bind(
             on_press=self.selecionar_pasta
         )
 
-        # ----------------------------------------------------
-        # AGENDAMENTOS
-        # ----------------------------------------------------
-
-        agenda = BotaoModerno(
-            text="🕐  VER AGENDAMENTOS",
-            cor=AZUL,
+        agendamentos = BotaoColorido(
+            text="🕐  MEUS AGENDAMENTOS",
+            font_size=21,
+            bold=True,
             size_hint_y=None,
-            height=60
+            height=80,
+            cor=(0.50, 0.25, 0.75, 1)
         )
 
-        agenda.bind(
+        agendamentos.bind(
             on_press=self.mostrar_agendamentos
         )
 
-        principal.add_widget(
-            agenda
-        )
+        layout.add_widget(titulo)
+        layout.add_widget(subtitulo)
+        layout.add_widget(status)
+        layout.add_widget(iniciar)
+        layout.add_widget(parar)
+        layout.add_widget(selecionar)
+        layout.add_widget(pasta)
+        layout.add_widget(agendamentos)
 
-        self.root.add_widget(
-            principal
-        )
-
-    # ========================================================
-    # STATUS
-    # ========================================================
+        self.root.add_widget(layout)
 
     def obter_status(self):
 
         if self.programa_rodando:
+            return "●  PROGRAMA ATIVO"
 
-            return "●  Programa em execução"
+        return "○  PROGRAMA PARADO"
 
-        return "○  Programa parado"
-
-    # ========================================================
-    # INICIAR
-    # ========================================================
-
-    def iniciar_programa(
-        self,
-        *args
-    ):
+    def iniciar_programa(self, *args):
 
         if self.programa_rodando:
 
             self.mostrar_mensagem(
-                "O programa já está em execução."
+                "O programa já está iniciado."
             )
 
             return
@@ -554,22 +231,12 @@ class KwaiAutomatico(App):
         )
 
         self.mostrar_mensagem(
-            "PROGRAMA INICIADO\n\n"
-            "O sistema está monitorando "
-            "seus agendamentos.\n\n"
-            "Nesta versão, o monitoramento "
-            "funciona enquanto o aplicativo "
-            "estiver aberto."
+            "PROGRAMA INICIADO!\n\n"
+            "O aplicativo está monitorando "
+            "os seus agendamentos."
         )
 
-    # ========================================================
-    # PARAR
-    # ========================================================
-
-    def parar_programa(
-        self,
-        *args
-    ):
+    def parar_programa(self, *args):
 
         self.programa_rodando = False
 
@@ -578,51 +245,30 @@ class KwaiAutomatico(App):
         )
 
         self.mostrar_mensagem(
-            "PROGRAMA PARADO\n\n"
-            "O monitoramento dos agendamentos "
-            "foi interrompido."
+            "PROGRAMA PARADO."
         )
 
-    # ========================================================
-    # VERIFICAR
-    # ========================================================
-
-    def verificar_agendamentos(
-        self,
-        dt
-    ):
+    def verificar_agendamentos(self, dt):
 
         if not self.programa_rodando:
-
             return
 
-        agora = datetime.now()
-
-        horario_atual = agora.strftime(
+        horario_atual = datetime.now().strftime(
             "%H:%M"
         )
 
-        agendamentos = (
-            self.carregar_agendamentos()
-        )
+        agendamentos = self.carregar_agendamentos()
 
         alterado = False
 
         for agendamento in agendamentos:
 
-            if agendamento.get(
-                "status"
-            ) != "agendado":
-
+            if agendamento.get("status") != "agendado":
                 continue
 
-            if agendamento.get(
-                "horario"
-            ) == horario_atual:
+            if agendamento.get("horario") == horario_atual:
 
-                agendamento[
-                    "status"
-                ] = "processando"
+                agendamento["status"] = "processando"
 
                 alterado = True
 
@@ -632,25 +278,29 @@ class KwaiAutomatico(App):
                 agendamentos
             )
 
-    # ========================================================
-    # SELECIONAR VÍDEOS
-    # ========================================================
+    def selecionar_videos(self, *args):
 
-    def selecionar_videos(
-        self,
-        *args
-    ):
+        if platform == "android":
+            self.abrir_seletor_android_videos()
+        else:
+            self.selecionar_videos_pc()
+
+    def selecionar_videos_pc(self):
+
+        from kivy.uix.filechooser import FileChooserListView
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=18,
-            spacing=12
+            padding=20,
+            spacing=15
         )
 
-        layout.add_widget(
-            self.criar_titulo(
-                "Selecionar vídeos"
-            )
+        titulo = Label(
+            text="📹 SELECIONE SEUS VÍDEOS",
+            font_size=26,
+            bold=True,
+            size_hint_y=None,
+            height=65
         )
 
         arquivos = FileChooserListView(
@@ -665,15 +315,22 @@ class KwaiAutomatico(App):
             multiselect=True
         )
 
-        layout.add_widget(
-            arquivos
+        confirmar = BotaoColorido(
+            text="✓  ADICIONAR VÍDEOS",
+            font_size=21,
+            bold=True,
+            size_hint_y=None,
+            height=75,
+            cor=(0.10, 0.65, 0.25, 1)
         )
 
-        confirmar = BotaoModerno(
-            text="✓  ADICIONAR VÍDEOS",
-            cor=VERDE,
+        voltar = BotaoColorido(
+            text="←  VOLTAR",
+            font_size=20,
+            bold=True,
             size_hint_y=None,
-            height=60
+            height=65,
+            cor=(0.35, 0.35, 0.40, 1)
         )
 
         confirmar.bind(
@@ -683,120 +340,390 @@ class KwaiAutomatico(App):
             )
         )
 
-        layout.add_widget(
-            confirmar
-        )
-
-        voltar = Button(
-            text="Voltar",
-            color=CINZA,
-            background_color=(
-                0,
-                0,
-                0,
-                0
-            ),
-            size_hint_y=None,
-            height=45
-        )
-
         voltar.bind(
             on_press=self.mostrar_principal
         )
 
-        layout.add_widget(
-            voltar
-        )
+        layout.add_widget(titulo)
+        layout.add_widget(arquivos)
+        layout.add_widget(confirmar)
+        layout.add_widget(voltar)
 
         self.root.clear_widgets()
+        self.root.add_widget(layout)
 
-        self.root.add_widget(
-            layout
-        )
+    def abrir_seletor_android_videos(self):
 
-    # ========================================================
-    # SELECIONAR PASTA
-    # ========================================================
+        try:
 
-    def selecionar_pasta(
-        self,
-        *args
-    ):
+            from android import activity
+            from jnius import autoclass
+
+            Intent = autoclass(
+                "android.content.Intent"
+            )
+
+            intent = Intent(
+                Intent.ACTION_OPEN_DOCUMENT
+            )
+
+            intent.addCategory(
+                Intent.CATEGORY_OPENABLE
+            )
+
+            intent.setType(
+                "video/*"
+            )
+
+            intent.putExtra(
+                Intent.EXTRA_ALLOW_MULTIPLE,
+                True
+            )
+
+            self.selecao_android = "videos"
+
+            activity.bind(
+                on_activity_result=
+                self.receber_resultado_android
+            )
+
+            activity.startActivityForResult(
+                intent,
+                1001
+            )
+
+        except Exception as erro:
+
+            self.mostrar_mensagem(
+                "Não foi possível abrir o "
+                "seletor de vídeos.\n\n"
+                f"{erro}"
+            )
+
+    def selecionar_pasta(self, *args):
+
+        if platform == "android":
+            self.abrir_seletor_android_pasta()
+        else:
+            self.selecionar_pasta_pc()
+
+    def selecionar_pasta_pc(self):
+
+        from kivy.uix.filechooser import FileChooserListView
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=18,
-            spacing=12
+            padding=20,
+            spacing=15
         )
 
-        layout.add_widget(
-            self.criar_titulo(
-                "Selecionar pasta"
-            )
+        titulo = Label(
+            text="📂 ESCOLHA A PASTA DOS VÍDEOS",
+            font_size=25,
+            bold=True,
+            size_hint_y=None,
+            height=65
         )
 
         arquivos = FileChooserListView(
             path=os.path.expanduser("~"),
-            dirselect=True
+            dirselect=True,
+            filters=[]
         )
 
-        layout.add_widget(
-            arquivos
-        )
-
-        confirmar = BotaoModerno(
+        confirmar = BotaoColorido(
             text="✓  USAR ESTA PASTA",
-            cor=VERDE,
+            font_size=21,
+            bold=True,
             size_hint_y=None,
-            height=60
+            height=75,
+            cor=(0.10, 0.65, 0.25, 1)
+        )
+
+        voltar = BotaoColorido(
+            text="←  VOLTAR",
+            font_size=20,
+            bold=True,
+            size_hint_y=None,
+            height=65,
+            cor=(0.35, 0.35, 0.40, 1)
         )
 
         confirmar.bind(
             on_press=lambda x:
-            self.confirmar_pasta(
+            self.confirmar_pasta_pc(
                 arquivos.selection
             )
-        )
-
-        layout.add_widget(
-            confirmar
-        )
-
-        voltar = Button(
-            text="Voltar",
-            color=CINZA,
-            background_color=(
-                0,
-                0,
-                0,
-                0
-            ),
-            size_hint_y=None,
-            height=45
         )
 
         voltar.bind(
             on_press=self.mostrar_principal
         )
 
-        layout.add_widget(
-            voltar
-        )
+        layout.add_widget(titulo)
+        layout.add_widget(arquivos)
+        layout.add_widget(confirmar)
+        layout.add_widget(voltar)
 
         self.root.clear_widgets()
+        self.root.add_widget(layout)
 
-        self.root.add_widget(
-            layout
+    def abrir_seletor_android_pasta(self):
+
+        try:
+
+            from android import activity
+            from jnius import autoclass
+
+            Intent = autoclass(
+                "android.content.Intent"
+            )
+
+            intent = Intent(
+                Intent.ACTION_OPEN_DOCUMENT_TREE
+            )
+
+            intent.addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+
+            self.selecao_android = "pasta"
+
+            activity.bind(
+                on_activity_result=
+                self.receber_resultado_android
+            )
+
+            activity.startActivityForResult(
+                intent,
+                1002
+            )
+
+        except Exception as erro:
+
+            self.mostrar_mensagem(
+                "Não foi possível abrir o "
+                "seletor de pastas.\n\n"
+                f"{erro}"
+            )
+
+    def receber_resultado_android(
+        self,
+        request_code,
+        result_code,
+        intent
+    ):
+
+        try:
+
+            from jnius import autoclass
+
+            Activity = autoclass(
+                "android.app.Activity"
+            )
+
+            if result_code != Activity.RESULT_OK:
+                return
+
+            if intent is None:
+                return
+
+            uri = intent.getData()
+
+            if uri is None:
+                return
+
+            uri_string = uri.toString()
+
+            if request_code == 1002:
+
+                self.pasta_selecionada = uri_string
+
+                self.mostrar_mensagem(
+                    "PASTA SELECIONADA!\n\n"
+                    "A pasta do Android foi "
+                    "registrada no aplicativo."
+                )
+
+            elif request_code == 1001:
+
+                videos = []
+
+                clip_data = intent.getClipData()
+
+                if clip_data is not None:
+
+                    quantidade = clip_data.getItemCount()
+
+                    for i in range(quantidade):
+
+                        item = clip_data.getItemAt(i)
+
+                        item_uri = item.getUri()
+
+                        videos.append(
+                            item_uri.toString()
+                        )
+
+                else:
+
+                    videos.append(
+                        uri_string
+                    )
+
+                self.videos_selecionados = videos
+
+                self.mostrar_videos_android(
+                    videos
+                )
+
+        except Exception as erro:
+
+            self.mostrar_mensagem(
+                "Erro ao receber a seleção "
+                "do Android.\n\n"
+                f"{erro}"
+            )
+
+    def mostrar_videos_android(self, videos):
+
+        if not videos:
+
+            self.mostrar_mensagem(
+                "Nenhum vídeo foi selecionado."
+            )
+
+            return
+
+        layout = BoxLayout(
+            orientation="vertical",
+            padding=25,
+            spacing=15
         )
 
-    # ========================================================
-    # CONFIRMAR PASTA
-    # ========================================================
+        titulo = Label(
+            text="📹 VÍDEOS SELECIONADOS",
+            font_size=27,
+            bold=True,
+            size_hint_y=None,
+            height=65
+        )
 
-    def confirmar_pasta(
-        self,
-        selecao
-    ):
+        nomes = []
+
+        for video in videos:
+
+            nome = video.split("/")[-1]
+
+            if not nome:
+                nome = "Vídeo selecionado"
+
+            nomes.append(nome)
+
+        lista = Label(
+            text="\n".join(nomes),
+            font_size=18
+        )
+
+        horario_titulo = Label(
+            text="🕐 ESCOLHA O HORÁRIO",
+            font_size=22,
+            bold=True,
+            size_hint_y=None,
+            height=50
+        )
+
+        horas = [
+            f"{i:02d}"
+            for i in range(24)
+        ]
+
+        self.seletor_hora = Spinner(
+            text="12",
+            values=horas,
+            font_size=22,
+            size_hint_y=None,
+            height=65
+        )
+
+        minutos = [
+            f"{i:02d}"
+            for i in range(0, 60, 5)
+        ]
+
+        self.seletor_minuto = Spinner(
+            text="00",
+            values=minutos,
+            font_size=22,
+            size_hint_y=None,
+            height=65
+        )
+
+        horario_atual = Label(
+            text="Horário escolhido: 12:00",
+            font_size=21,
+            bold=True,
+            size_hint_y=None,
+            height=55
+        )
+
+        def atualizar_horario(instance, valor):
+
+            horario_atual.text = (
+                "Horário escolhido: "
+                f"{self.seletor_hora.text}:"
+                f"{self.seletor_minuto.text}"
+            )
+
+        self.seletor_hora.bind(
+            text=atualizar_horario
+        )
+
+        self.seletor_minuto.bind(
+            text=atualizar_horario
+        )
+
+        salvar = BotaoColorido(
+            text="✓  SALVAR AGENDAMENTO",
+            font_size=21,
+            bold=True,
+            size_hint_y=None,
+            height=75,
+            cor=(0.10, 0.65, 0.25, 1)
+        )
+
+        salvar.bind(
+            on_press=self.salvar_agendamento
+        )
+
+        voltar = BotaoColorido(
+            text="←  VOLTAR",
+            font_size=20,
+            bold=True,
+            size_hint_y=None,
+            height=65,
+            cor=(0.35, 0.35, 0.40, 1)
+        )
+
+        voltar.bind(
+            on_press=self.mostrar_principal
+        )
+
+        layout.add_widget(titulo)
+        layout.add_widget(lista)
+        layout.add_widget(horario_titulo)
+        layout.add_widget(self.seletor_hora)
+        layout.add_widget(self.seletor_minuto)
+        layout.add_widget(horario_atual)
+        layout.add_widget(salvar)
+        layout.add_widget(voltar)
+
+        self.root.clear_widgets()
+        self.root.add_widget(layout)
+
+    def confirmar_pasta_pc(self, selecao):
 
         if not selecao:
 
@@ -808,12 +735,10 @@ class KwaiAutomatico(App):
 
         pasta = selecao[0]
 
-        if not os.path.isdir(
-            pasta
-        ):
+        if not os.path.isdir(pasta):
 
             self.mostrar_mensagem(
-                "Selecione uma pasta."
+                "Selecione uma pasta, não um arquivo."
             )
 
             return
@@ -830,18 +755,14 @@ class KwaiAutomatico(App):
 
         try:
 
-            for nome in os.listdir(
-                pasta
-            ):
+            for nome in os.listdir(pasta):
 
                 caminho = os.path.join(
                     pasta,
                     nome
                 )
 
-                if os.path.isfile(
-                    caminho
-                ):
+                if os.path.isfile(caminho):
 
                     if nome.lower().endswith(
                         extensoes
@@ -854,35 +775,27 @@ class KwaiAutomatico(App):
         except Exception as erro:
 
             self.mostrar_mensagem(
-                "Erro ao acessar a pasta.\n\n"
+                "Não foi possível acessar a pasta.\n\n"
                 f"{erro}"
             )
 
             return
 
         self.videos_selecionados = videos
+        self.pasta_selecionada = pasta
 
         if not videos:
 
             self.mostrar_mensagem(
-                "Nenhum vídeo foi encontrado "
-                "nesta pasta."
+                "A pasta foi selecionada, "
+                "mas nenhum vídeo foi encontrado."
             )
 
             return
 
-        self.mostrar_videos(
-            videos
-        )
+        self.mostrar_videos(videos)
 
-    # ========================================================
-    # MOSTRAR VÍDEOS
-    # ========================================================
-
-    def mostrar_videos(
-        self,
-        videos
-    ):
+    def mostrar_videos(self, videos):
 
         if not videos:
 
@@ -898,67 +811,34 @@ class KwaiAutomatico(App):
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=18,
-            spacing=12
+            padding=25,
+            spacing=15
         )
 
-        layout.add_widget(
-            self.criar_titulo(
-                "Agendar publicação"
-            )
+        titulo = Label(
+            text="📹 VÍDEOS SELECIONADOS",
+            font_size=27,
+            bold=True,
+            size_hint_y=None,
+            height=65
         )
 
-        lista_scroll = ScrollView()
-
-        nomes = "\n\n".join(
-            "• " + os.path.basename(video)
+        nomes = "\n".join(
+            os.path.basename(video)
             for video in videos
         )
 
         lista = Label(
             text=nomes,
-            color=BRANCO,
-            font_size=16,
-            size_hint_y=None,
-            halign="left",
-            valign="top"
+            font_size=18
         )
 
-        lista.bind(
-            texture_size=lambda instance,
-            value:
-            setattr(
-                instance,
-                "height",
-                value[1]
-            )
-        )
-
-        lista_scroll.add_widget(
-            lista
-        )
-
-        layout.add_widget(
-            lista_scroll
-        )
-
-        horario_label = Label(
-            text="HORÁRIO DA POSTAGEM",
-            color=CINZA,
-            font_size=13,
+        horario_titulo = Label(
+            text="🕐 ESCOLHA O HORÁRIO",
+            font_size=22,
             bold=True,
             size_hint_y=None,
-            height=35
-        )
-
-        layout.add_widget(
-            horario_label
-        )
-
-        horarios = BoxLayout(
-            spacing=10,
-            size_hint_y=None,
-            height=60
+            height=50
         )
 
         horas = [
@@ -969,117 +849,102 @@ class KwaiAutomatico(App):
         self.seletor_hora = Spinner(
             text="12",
             values=horas,
-            background_color=ROXO,
-            color=BRANCO,
-            font_size=18
+            font_size=22,
+            size_hint_y=None,
+            height=65
         )
 
         minutos = [
             f"{i:02d}"
-            for i in range(
-                0,
-                60,
-                5
-            )
+            for i in range(0, 60, 5)
         ]
 
         self.seletor_minuto = Spinner(
             text="00",
             values=minutos,
-            background_color=ROXO,
-            color=BRANCO,
-            font_size=18
-        )
-
-        horarios.add_widget(
-            self.seletor_hora
-        )
-
-        horarios.add_widget(
-            self.seletor_minuto
-        )
-
-        layout.add_widget(
-            horarios
-        )
-
-        salvar = BotaoModerno(
-            text="✓  SALVAR AGENDAMENTO",
-            cor=VERDE,
+            font_size=22,
             size_hint_y=None,
             height=65
+        )
+
+        horario_atual = Label(
+            text="Horário escolhido: 12:00",
+            font_size=21,
+            bold=True,
+            size_hint_y=None,
+            height=55
+        )
+
+        def atualizar_horario(instance, valor):
+
+            horario_atual.text = (
+                "Horário escolhido: "
+                f"{self.seletor_hora.text}:"
+                f"{self.seletor_minuto.text}"
+            )
+
+        self.seletor_hora.bind(
+            text=atualizar_horario
+        )
+
+        self.seletor_minuto.bind(
+            text=atualizar_horario
+        )
+
+        salvar = BotaoColorido(
+            text="✓  SALVAR AGENDAMENTO",
+            font_size=21,
+            bold=True,
+            size_hint_y=None,
+            height=75,
+            cor=(0.10, 0.65, 0.25, 1)
         )
 
         salvar.bind(
             on_press=self.salvar_agendamento
         )
 
-        layout.add_widget(
-            salvar
-        )
-
-        voltar = Button(
-            text="Voltar",
-            color=CINZA,
-            background_color=(
-                0,
-                0,
-                0,
-                0
-            ),
+        voltar = BotaoColorido(
+            text="←  VOLTAR",
+            font_size=20,
+            bold=True,
             size_hint_y=None,
-            height=45
+            height=65,
+            cor=(0.35, 0.35, 0.40, 1)
         )
 
         voltar.bind(
             on_press=self.mostrar_principal
         )
 
-        layout.add_widget(
-            voltar
-        )
+        layout.add_widget(titulo)
+        layout.add_widget(lista)
+        layout.add_widget(horario_titulo)
+        layout.add_widget(self.seletor_hora)
+        layout.add_widget(self.seletor_minuto)
+        layout.add_widget(horario_atual)
+        layout.add_widget(salvar)
+        layout.add_widget(voltar)
 
         self.root.clear_widgets()
+        self.root.add_widget(layout)
 
-        self.root.add_widget(
-            layout
-        )
-
-    # ========================================================
-    # SALVAR AGENDAMENTO
-    # ========================================================
-
-    def salvar_agendamento(
-        self,
-        *args
-    ):
+    def salvar_agendamento(self, *args):
 
         hora = self.seletor_hora.text
-
         minuto = self.seletor_minuto.text
 
-        agendamentos = (
-            self.carregar_agendamentos()
-        )
+        agendamentos = self.carregar_agendamentos()
 
         novo_agendamento = {
-
-            "id":
-                len(agendamentos) + 1,
-
-            "videos":
-                self.videos_selecionados,
-
-            "horario":
-                f"{hora}:{minuto}",
-
-            "criado_em":
-                datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                ),
-
-            "status":
-                "agendado"
+            "id": len(agendamentos) + 1,
+            "videos": self.videos_selecionados,
+            "pasta": self.pasta_selecionada,
+            "horario": f"{hora}:{minuto}",
+            "criado_em": datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+            "status": "agendado"
         }
 
         agendamentos.append(
@@ -1091,156 +956,80 @@ class KwaiAutomatico(App):
         )
 
         self.mostrar_mensagem(
-            "AGENDAMENTO SALVO!\n\n"
-            f"Vídeos: "
-            f"{len(self.videos_selecionados)}\n\n"
+            "✓ AGENDAMENTO SALVO!\n\n"
+            f"Vídeos: {len(self.videos_selecionados)}\n"
             f"Horário: {hora}:{minuto}"
         )
 
-    # ========================================================
-    # AGENDAMENTOS
-    # ========================================================
+    def mostrar_agendamentos(self, *args):
 
-    def mostrar_agendamentos(
-        self,
-        *args
-    ):
-
-        agendamentos = (
-            self.carregar_agendamentos()
-        )
+        agendamentos = self.carregar_agendamentos()
 
         layout = BoxLayout(
             orientation="vertical",
-            padding=18,
-            spacing=12
+            padding=25,
+            spacing=15
         )
 
-        layout.add_widget(
-            self.criar_titulo(
-                "Meus agendamentos"
-            )
-        )
-
-        scroll = ScrollView()
-
-        conteudo = BoxLayout(
-            orientation="vertical",
-            spacing=12,
-            size_hint_y=None
-        )
-
-        conteudo.bind(
-            minimum_height=
-            conteudo.setter(
-                "height"
-            )
+        titulo = Label(
+            text="🕐 MEUS AGENDAMENTOS",
+            font_size=27,
+            bold=True,
+            size_hint_y=None,
+            height=70
         )
 
         if not agendamentos:
 
-            vazio = Label(
+            lista = Label(
                 text="Nenhum agendamento salvo.",
-                color=CINZA,
-                font_size=18
-            )
-
-            conteudo.add_widget(
-                vazio
+                font_size=21
             )
 
         else:
 
+            textos = []
+
             for agendamento in agendamentos:
 
-                cartao = Cartao(
-                    size_hint_y=None,
-                    height=135
-                )
-
-                numero = Label(
-                    text=
-                    f"AGENDAMENTO #{agendamento['id']}",
-                    color=ROXO_CLARO,
-                    font_size=16,
-                    bold=True,
-                    size_hint_y=None,
-                    height=30
-                )
-
-                horario = Label(
-                    text=
-                    f"Horário: "
-                    f"{agendamento['horario']}",
-                    color=BRANCO,
-                    font_size=17,
-                    size_hint_y=None,
-                    height=30
-                )
-
-                quantidade = Label(
-                    text=
+                texto = (
+                    f"Agendamento #{agendamento['id']}\n"
+                    f"Horário: {agendamento['horario']}\n"
                     f"Vídeos: "
-                    f"{len(agendamento['videos'])}   "
-                    f"|   Status: "
-                    f"{agendamento['status']}",
-                    color=CINZA,
-                    font_size=14
+                    f"{len(agendamento['videos'])}\n"
+                    f"Status: {agendamento['status']}\n"
                 )
 
-                cartao.add_widget(
-                    numero
-                )
+                textos.append(texto)
 
-                cartao.add_widget(
-                    horario
-                )
+            lista = Label(
+                text="\n".join(textos),
+                font_size=19
+            )
 
-                cartao.add_widget(
-                    quantidade
-                )
-
-                conteudo.add_widget(
-                    cartao
-                )
-
-        scroll.add_widget(
-            conteudo
-        )
-
-        layout.add_widget(
-            scroll
-        )
-
-        voltar = BotaoModerno(
-            text="VOLTAR",
-            cor=ROXO,
+        voltar = BotaoColorido(
+            text="←  VOLTAR",
+            font_size=21,
+            bold=True,
             size_hint_y=None,
-            height=60
+            height=70,
+            cor=(0.35, 0.35, 0.40, 1)
         )
 
         voltar.bind(
             on_press=self.mostrar_principal
         )
 
-        layout.add_widget(
-            voltar
-        )
+        layout.add_widget(titulo)
+        layout.add_widget(lista)
+        layout.add_widget(voltar)
 
         self.root.clear_widgets()
+        self.root.add_widget(layout)
 
-        self.root.add_widget(
-            layout
-        )
+    def mostrar_mensagem(self, mensagem):
 
-    # ========================================================
-    # MENSAGEM
-    # ========================================================
-
-    def mostrar_mensagem(
-        self,
-        mensagem
-    ):
+        self.root.clear_widgets()
 
         layout = BoxLayout(
             orientation="vertical",
@@ -1248,57 +1037,30 @@ class KwaiAutomatico(App):
             spacing=25
         )
 
-        topo = Label(
-            text="Kwai Automático",
-            color=ROXO_CLARO,
-            font_size=25,
-            bold=True,
-            size_hint_y=None,
-            height=60
-        )
-
         texto = Label(
             text=mensagem,
-            color=BRANCO,
-            font_size=20,
-            halign="center",
-            valign="middle"
+            font_size=23,
+            bold=True
         )
 
-        voltar = BotaoModerno(
-            text="CONTINUAR",
-            cor=ROXO,
+        voltar = BotaoColorido(
+            text="←  VOLTAR",
+            font_size=22,
+            bold=True,
             size_hint_y=None,
-            height=65
+            height=80,
+            cor=(0.35, 0.35, 0.40, 1)
         )
 
         voltar.bind(
             on_press=self.mostrar_principal
         )
 
-        layout.add_widget(
-            topo
-        )
+        layout.add_widget(texto)
+        layout.add_widget(voltar)
 
-        layout.add_widget(
-            texto
-        )
+        self.root.add_widget(layout)
 
-        layout.add_widget(
-            voltar
-        )
-
-        self.root.clear_widgets()
-
-        self.root.add_widget(
-            layout
-        )
-
-
-# ============================================================
-# EXECUTAR
-# ============================================================
 
 if __name__ == "__main__":
-
     KwaiAutomatico().run()
