@@ -20,7 +20,7 @@ version = 1.0
 orientation = portrait
 
 # Dependências
-requirements = python3,kivy
+requirements = python3,kivy,pyjnius
 
 # Tela cheia
 fullscreen = 0
