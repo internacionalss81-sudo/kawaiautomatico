@@ -9,12 +9,13 @@ branches:
 jobs:
 build:
 runs-on: ubuntu-22.04
-env:
-JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
-ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
 ```
+env:
+  JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+  ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+  ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+
 steps:
   - name: Baixar projeto
     uses: actions/checkout@v4
@@ -27,10 +28,12 @@ steps:
   - name: Instalar dependencias
     run: |
       sudo apt-get update
-      sudo apt-get install -y git zip unzip wget openjdk-17-jdk
+      sudo apt-get install -y git zip unzip wget curl openjdk-17-jdk
 
-  - name: Configurar Java
+  - name: Configurar Java 17
     run: |
+      sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+      sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
       java -version
       javac -version
 
@@ -39,6 +42,58 @@ steps:
       python -m pip install --upgrade pip
       pip install buildozer
       pip install "cython==0.29.37"
+
+  - name: Preparar Android SDK
+    run: |
+      set -e
+
+      SDK="$ANDROID_HOME"
+
+      rm -rf "$SDK"
+      mkdir -p "$SDK/tools"
+
+      wget -q https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -O /tmp/cmdline-tools.zip
+
+      rm -rf /tmp/android-sdk
+      mkdir -p /tmp/android-sdk
+
+      unzip -q /tmp/cmdline-tools.zip -d /tmp/android-sdk
+
+      cp -r /tmp/android-sdk/cmdline-tools/* "$SDK/tools/"
+
+      chmod +x "$SDK/tools/bin/sdkmanager"
+
+      echo "$SDK/tools/bin" >> "$GITHUB_PATH"
+
+  - name: Aceitar licencas Android
+    run: |
+      set -e
+      yes | "$ANDROID_HOME/tools/bin/sdkmanager" --sdk_root="$ANDROID_HOME" --licenses || true
+
+  - name: Instalar componentes Android
+    run: |
+      set -e
+
+      "$ANDROID_HOME/tools/bin/sdkmanager" \
+        --sdk_root="$ANDROID_HOME" \
+        "platform-tools" \
+        "platforms;android-35" \
+        "build-tools;35.0.0"
+
+  - name: Verificar AIDL
+    run: |
+      set -e
+
+      echo "Verificando Build Tools..."
+      ls -lah "$ANDROID_HOME/build-tools/35.0.0"
+
+      echo "Verificando AIDL..."
+      "$ANDROID_HOME/build-tools/35.0.0/aidl" --version
+
+  - name: Limpar arquivos antigos
+    run: |
+      rm -rf .buildozer
+      rm -rf bin
 
   - name: Construir APK
     run: |
