@@ -12,6 +12,8 @@ jobs:
 
     env:
       JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+      ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+      ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
     steps:
       - name: Baixar projeto
@@ -27,7 +29,7 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/azure-cli.sources
           sudo rm -f /etc/apt/sources.list.d/azure-cli.list
 
-      - name: Instalar dependencias Linux
+      - name: Instalar dependencias
         run: |
           sudo apt-get update
 
@@ -50,9 +52,11 @@ jobs:
             libffi-dev \
             libssl-dev
 
-      - name: Confirmar Java 17
+      - name: Configurar Java 17
         run: |
-          echo "JAVA_HOME=$JAVA_HOME"
+          sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+
           java -version
           javac -version
 
@@ -62,45 +66,55 @@ jobs:
           pip install buildozer
           pip install "cython==0.29.37"
 
-      - name: Preparar SDK Android do Buildozer
+      - name: Preparar SDK Android
         run: |
-          SDK="$HOME/.buildozer/android/platform/android-sdk"
-          CMD="$SDK/cmdline-tools/latest"
+          SDK="$ANDROID_HOME"
 
-          mkdir -p "$SDK/cmdline-tools"
+          rm -rf "$SDK"
+          mkdir -p "$SDK"
 
           wget -q \
             https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
-            -O /tmp/android-cmdline-tools.zip
+            -O /tmp/cmdline-tools.zip
 
-          rm -rf "$CMD"
-          mkdir -p "$CMD"
+          mkdir -p /tmp/android-sdk
 
-          unzip -q /tmp/android-cmdline-tools.zip -d /tmp/android-tools
+          unzip -q /tmp/cmdline-tools.zip \
+            -d /tmp/android-sdk
 
-          mv /tmp/android-tools/cmdline-tools/* "$CMD"/
+          mkdir -p "$SDK/tools"
 
-          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
-          echo "$CMD/bin" >> "$GITHUB_PATH"
+          cp -r /tmp/android-sdk/cmdline-tools/* "$SDK/tools/"
 
-      - name: Instalar ferramentas Android
+          echo "$SDK/tools/bin" >> "$GITHUB_PATH"
+
+      - name: Instalar Android Build Tools
         run: |
-          SDK="$HOME/.buildozer/android/platform/android-sdk"
+          SDK="$ANDROID_HOME"
 
-          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-
-          "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+          "$SDK/tools/bin/sdkmanager" --sdk_root="$SDK" \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
 
+      - name: Aceitar licencas Android
+        run: |
+          SDK="$ANDROID_HOME"
+
+          yes | "$SDK/tools/bin/sdkmanager" \
+            --sdk_root="$SDK" \
+            --licenses || true
+
       - name: Verificar AIDL
         run: |
-          SDK="$HOME/.buildozer/android/platform/android-sdk"
+          SDK="$ANDROID_HOME"
 
-          echo "SDK:"
+          echo "ANDROID_HOME:"
           echo "$SDK"
+
+          echo ""
+          echo "SDK:"
+          ls -lah "$SDK"
 
           echo ""
           echo "Build Tools:"
@@ -111,31 +125,13 @@ jobs:
           find "$SDK/build-tools" -name aidl -type f -print
 
           echo ""
-          echo "SDK Manager:"
-          "$SDK/cmdline-tools/latest/bin/sdkmanager" --list | head -30
+          echo "SDKMANAGER:"
+          "$SDK/tools/bin/sdkmanager" --version
 
-      - name: Limpar arquivos antigos
+      - name: Limpar Buildozer
         run: |
           rm -rf .buildozer
           rm -rf bin
-
-      - name: Recriar SDK depois da limpeza
-        run: |
-          SDK="$HOME/.buildozer/android/platform/android-sdk"
-
-          mkdir -p "$SDK"
-
-          if [ ! -d "$SDK/build-tools/35.0.0" ]; then
-            echo "Build Tools não encontrados."
-            exit 1
-          fi
-
-          if [ ! -f "$SDK/build-tools/35.0.0/aidl" ]; then
-            echo "AIDL não encontrado."
-            exit 1
-          fi
-
-          echo "AIDL encontrado com sucesso."
 
       - name: Construir APK
         run: |
@@ -143,7 +139,6 @@ jobs:
 
       - name: Verificar APK
         run: |
-          echo "Arquivos APK encontrados:"
           ls -lah bin/
 
       - name: Salvar APK
