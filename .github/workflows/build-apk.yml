@@ -33,24 +33,7 @@ steps:
   - name: Instalar dependencias Linux
     run: |
       sudo apt-get update
-      sudo apt-get install -y \
-        git \
-        zip \
-        unzip \
-        wget \
-        curl \
-        openjdk-17-jdk \
-        autoconf \
-        automake \
-        libtool \
-        pkg-config \
-        zlib1g-dev \
-        libncurses5-dev \
-        libncursesw5-dev \
-        libtinfo5 \
-        cmake \
-        libffi-dev \
-        libssl-dev
+      sudo apt-get install -y git zip unzip wget curl openjdk-17-jdk autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
 
   - name: Configurar Java 17
     run: |
@@ -67,41 +50,30 @@ steps:
 
   - name: Preparar SDK Android
     run: |
-      set -e
       SDK="$ANDROID_HOME"
 
       rm -rf "$SDK"
-      mkdir -p "$SDK"
-
-      wget -q \
-        https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip \
-        -O /tmp/cmdline-tools.zip
-
-      rm -rf /tmp/android-sdk
-      mkdir -p /tmp/android-sdk
-
-      unzip -q /tmp/cmdline-tools.zip \
-        -d /tmp/android-sdk
-
       mkdir -p "$SDK/tools"
-      cp -r /tmp/android-sdk/cmdline-tools/* "$SDK/tools/"
+
+      wget -q https://dl.google.com/android/repository/commandlinetools-linux-12266719_latest.zip -O /tmp/android.zip
+
+      mkdir -p /tmp/android-tools
+      unzip -q /tmp/android.zip -d /tmp/android-tools
+
+      cp -r /tmp/android-tools/cmdline-tools/* "$SDK/tools/"
 
       chmod +x "$SDK/tools/bin/sdkmanager"
 
-      echo "$SDK/tools/bin" >> "$GITHUB_PATH"
-
-  - name: Aceitar licencas Android
+  - name: Aceitar licencas
     run: |
-      set -e
       SDK="$ANDROID_HOME"
 
       yes | "$SDK/tools/bin/sdkmanager" \
         --sdk_root="$SDK" \
         --licenses || true
 
-  - name: Instalar componentes Android
+  - name: Instalar Android
     run: |
-      set -e
       SDK="$ANDROID_HOME"
 
       "$SDK/tools/bin/sdkmanager" \
@@ -110,30 +82,21 @@ steps:
         "platforms;android-35" \
         "build-tools;35.0.0"
 
-  - name: Verificar SDK e AIDL
+  - name: Verificar AIDL
     run: |
-      set -e
       SDK="$ANDROID_HOME"
 
-      echo "ANDROID_HOME:"
-      echo "$SDK"
-
-      echo "Build Tools:"
+      echo "Verificando Build Tools..."
       ls -lah "$SDK/build-tools"
 
-      echo "AIDL:"
-      find "$SDK/build-tools" -name aidl -type f -print
+      echo "Procurando AIDL..."
+      find "$SDK/build-tools" -name aidl -type f
 
-      if [ ! -f "$SDK/build-tools/35.0.0/aidl" ]; then
-        echo "ERRO: AIDL nao foi instalado."
-        exit 1
-      fi
+      test -f "$SDK/build-tools/35.0.0/aidl"
 
-      echo "AIDL encontrado com sucesso!"
+      echo "AIDL encontrado!"
 
-      "$SDK/tools/bin/sdkmanager" --version
-
-  - name: Limpar arquivos antigos do Buildozer
+  - name: Limpar Buildozer
     run: |
       rm -rf .buildozer
       rm -rf bin
